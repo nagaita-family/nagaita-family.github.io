@@ -6,11 +6,7 @@
   <meta name="theme-color" content="#f7f8fc">
   <title>Nagaita Family</title>
   <style>
-    :root{
-      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-      color:#1f2937;
-      background:#f7f8fc;
-    }
+    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f2937;background:#f7f8fc}
     *{box-sizing:border-box}
     body{margin:0;min-height:100vh;background:linear-gradient(180deg,#f9fbff 0%,#f7f8fc 100%)}
     main{width:min(980px,100%);margin:0 auto;padding:40px 20px 56px}
@@ -23,34 +19,21 @@
     h2{margin:0;font-size:24px;letter-spacing:-.02em}
     .section-note{color:#9ca3af;font-size:13px}
     .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-    .card{
-      display:flex;
-      align-items:center;
-      gap:16px;
-      min-height:132px;
-      padding:20px;
-      border-radius:24px;
-      background:#fff;
-      color:inherit;
-      text-decoration:none;
-      border:1px solid #e8eaf0;
-      box-shadow:0 10px 30px rgba(31,41,55,.07);
-      transition:transform .15s ease,box-shadow .15s ease;
-    }
+    .card{display:flex;align-items:center;gap:16px;min-height:132px;padding:20px;border-radius:24px;background:#fff;color:inherit;text-decoration:none;border:1px solid #e8eaf0;box-shadow:0 10px 30px rgba(31,41,55,.07);transition:transform .15s ease,box-shadow .15s ease}
     .card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(31,41,55,.11)}
     .icon{width:64px;height:64px;display:grid;place-items:center;flex:0 0 64px;border-radius:18px;background:#f1f4f9;font-size:32px}
-    .copy{min-width:0}
-    .copy strong{display:block;font-size:19px;line-height:1.2;margin-bottom:7px}
-    .copy span{display:block;color:#6b7280;font-size:14px;line-height:1.5}
-    .open{margin-top:10px;font-size:13px;font-weight:700;color:#4b5563}
-    footer{margin-top:40px;padding-top:18px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:12px}
-    @media (max-width:680px){
-      main{padding:28px 16px 42px}
-      .grid{grid-template-columns:1fr}
-      .card{min-height:116px;padding:17px;border-radius:20px}
-      .icon{width:56px;height:56px;flex-basis:56px;border-radius:16px;font-size:28px}
-      h2{font-size:22px}
-    }
+    .copy{min-width:0}.copy strong{display:block;font-size:19px;line-height:1.2;margin-bottom:7px}.copy span{display:block;color:#6b7280;font-size:14px;line-height:1.5}.open{margin-top:10px;font-size:13px;font-weight:700;color:#4b5563}
+    footer{margin-top:40px;padding-top:18px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .settings-link{appearance:none;border:0;background:transparent;color:#b0b5bf;font:inherit;padding:4px 0;cursor:pointer;text-decoration:underline;text-decoration-color:#d9dce2;text-underline-offset:3px}
+    .settings-link:hover{color:#6b7280}
+    .settings{display:none;margin-top:14px;padding:16px;border:1px solid #e5e7eb;background:rgba(255,255,255,.82);border-radius:16px;color:#4b5563;font-size:13px}
+    .settings.open{display:block}
+    .settings h3{margin:0 0 4px;font-size:15px;color:#374151}.settings p{margin:0 0 12px;color:#9ca3af;line-height:1.5}
+    .setting-list{display:grid;gap:8px}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 12px;background:#fff;border:1px solid #eef0f3;border-radius:12px}.setting-name{min-width:0}.setting-name strong{display:block;color:#4b5563;font-size:13px}.setting-name span{display:block;color:#a1a7b0;font-size:11px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .toggle{position:relative;width:42px;height:24px;flex:0 0 42px}.toggle input{position:absolute;opacity:0}.slider{position:absolute;inset:0;background:#d8dce4;border-radius:999px;transition:.15s}.slider:after{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transition:.15s}.toggle input:checked+.slider{background:#6b8afd}.toggle input:checked+.slider:after{transform:translateX(18px)}
+    .hidden-summary{margin-top:14px;padding-top:12px;border-top:1px dashed #e2e5ea;color:#9ca3af}.hidden-summary strong{color:#7b8190}.hidden-list{margin-top:8px;display:flex;flex-wrap:wrap;gap:7px}.hidden-chip{border:1px solid #e6e8ed;background:#f8f9fb;color:#8b919b;border-radius:999px;padding:6px 9px;font:inherit;cursor:pointer}.hidden-chip:hover{background:#fff;color:#555d68}
+    .reset-btn{margin-top:12px;appearance:none;border:0;background:transparent;color:#a0a5ae;text-decoration:underline;text-underline-offset:3px;font:inherit;cursor:pointer;padding:0}
+    @media (max-width:680px){main{padding:28px 16px 42px}.grid{grid-template-columns:1fr}.card{min-height:116px;padding:17px;border-radius:20px}.icon{width:56px;height:56px;flex-basis:56px;border-radius:16px;font-size:28px}h2{font-size:22px}.setting-row{padding:10px}}
   </style>
 </head>
 <body>
@@ -61,57 +44,95 @@
       <p class="lead">みおり・こうすけの学習アプリ置き場</p>
     </header>
 
-    <section class="section" aria-labelledby="miori-title">
-      <div class="section-head">
-        <h2 id="miori-title">Miori</h2>
-        <div class="section-note">English & Kanji</div>
-      </div>
-      <div class="grid">
-        <a class="card" href="/miori-word-garden/">
-          <div class="icon">🌼</div>
-          <div class="copy">
-            <strong>Miori's Word Garden</strong>
-            <span>英単語を練習して、ガーデンを育てる。</span>
-            <div class="open">OPEN →</div>
-          </div>
-        </a>
-        <a class="card" href="/miori-kanji-quest/">
-          <div class="icon">✏️</div>
-          <div class="copy">
-            <strong>Miori Kanji Quest</strong>
-            <span>漢字を書いて、空島を育てる。</span>
-            <div class="open">OPEN →</div>
-          </div>
-        </a>
-        <a class="card" href="/miori-spell-garden/">
-          <div class="icon">🔤</div>
-          <div class="copy">
-            <strong>Miori's Spell Garden</strong>
-            <span>スペリングをゲーム感覚で練習。</span>
-            <div class="open">OPEN →</div>
-          </div>
-        </a>
-      </div>
+    <section class="section" id="miori-section" aria-labelledby="miori-title">
+      <div class="section-head"><h2 id="miori-title">Miori</h2><div class="section-note">English & Kanji</div></div>
+      <div class="grid" id="miori-grid"></div>
     </section>
 
-    <section class="section" aria-labelledby="kosuke-title">
-      <div class="section-head">
-        <h2 id="kosuke-title">Kosuke</h2>
-        <div class="section-note">Letters</div>
-      </div>
-      <div class="grid">
-        <a class="card" href="/kosuke-letter-quest/">
-          <div class="icon">🚀</div>
-          <div class="copy">
-            <strong>Kosuke Letter Quest</strong>
-            <span>アルファベットを遊びながら覚える。</span>
-            <div class="open">OPEN →</div>
-          </div>
-        </a>
-      </div>
+    <section class="section" id="kosuke-section" aria-labelledby="kosuke-title">
+      <div class="section-head"><h2 id="kosuke-title">Kosuke</h2><div class="section-note">Letters</div></div>
+      <div class="grid" id="kosuke-grid"></div>
     </section>
 
-    <footer>family.nagaita.jp</footer>
+    <footer>
+      <span>family.nagaita.jp</span>
+      <button class="settings-link" id="settings-toggle" type="button">表示設定</button>
+    </footer>
+
+    <section class="settings" id="settings-panel" aria-label="ゲーム表示設定">
+      <h3>TOPに表示するゲーム</h3>
+      <p>スイッチをOFFにするとTOPから隠れます。非表示のゲームは下からいつでも戻せます。</p>
+      <div class="setting-list" id="setting-list"></div>
+      <div class="hidden-summary" id="hidden-summary"></div>
+      <button class="reset-btn" id="reset-btn" type="button">すべて表示に戻す</button>
+    </section>
   </main>
+
+  <script>
+    const games = [
+      {id:'word', person:'miori', name:"Miori's Word Garden", desc:'英単語を練習して、ガーデンを育てる。', icon:'🌼', href:'/miori-word-garden/'},
+      {id:'kanji', person:'miori', name:'Miori Kanji Quest', desc:'漢字を書いて、空島を育てる。', icon:'✏️', href:'/miori-kanji-quest/'},
+      {id:'spell', person:'miori', name:"Miori's Spell Garden", desc:'スペリングをゲーム感覚で練習。', icon:'🔤', href:'/miori-spell-garden/'},
+      {id:'letter', person:'kosuke', name:'Kosuke Letter Quest', desc:'アルファベットを遊びながら覚える。', icon:'🚀', href:'/kosuke-letter-quest/'}
+    ];
+
+    const storageKey = 'nagaita-family-visible-games-v1';
+    function loadVisibility(){
+      try{
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        if(saved && typeof saved === 'object') return Object.fromEntries(games.map(g => [g.id, saved[g.id] !== false]));
+      }catch(e){}
+      return Object.fromEntries(games.map(g => [g.id,true]));
+    }
+    let visible = loadVisibility();
+    function save(){ localStorage.setItem(storageKey, JSON.stringify(visible)); }
+
+    function cardHtml(g){
+      return `<a class="card" href="${g.href}"><div class="icon">${g.icon}</div><div class="copy"><strong>${g.name}</strong><span>${g.desc}</span><div class="open">OPEN →</div></div></a>`;
+    }
+
+    function render(){
+      const miori = games.filter(g => g.person==='miori' && visible[g.id]);
+      const kosuke = games.filter(g => g.person==='kosuke' && visible[g.id]);
+      document.getElementById('miori-grid').innerHTML = miori.map(cardHtml).join('');
+      document.getElementById('kosuke-grid').innerHTML = kosuke.map(cardHtml).join('');
+      document.getElementById('miori-section').style.display = miori.length ? '' : 'none';
+      document.getElementById('kosuke-section').style.display = kosuke.length ? '' : 'none';
+
+      document.getElementById('setting-list').innerHTML = games.map(g => `
+        <div class="setting-row">
+          <div class="setting-name"><strong>${g.icon} ${g.name}</strong><span>${g.href}</span></div>
+          <label class="toggle" aria-label="${g.name}をTOPに表示">
+            <input type="checkbox" data-game="${g.id}" ${visible[g.id] ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>`).join('');
+
+      const hidden = games.filter(g => !visible[g.id]);
+      const summary = document.getElementById('hidden-summary');
+      if(hidden.length){
+        summary.innerHTML = `<strong>非表示のゲーム</strong><div class="hidden-list">${hidden.map(g => `<button class="hidden-chip" type="button" data-restore="${g.id}">＋ ${g.name}</button>`).join('')}</div>`;
+      } else {
+        summary.innerHTML = '<span>現在、非表示のゲームはありません。</span>';
+      }
+
+      document.querySelectorAll('[data-game]').forEach(el => {
+        el.addEventListener('change', e => { visible[e.target.dataset.game] = e.target.checked; save(); render(); });
+      });
+      document.querySelectorAll('[data-restore]').forEach(el => {
+        el.addEventListener('click', e => { visible[e.currentTarget.dataset.restore] = true; save(); render(); });
+      });
+    }
+
+    document.getElementById('settings-toggle').addEventListener('click', () => {
+      const panel = document.getElementById('settings-panel');
+      panel.classList.toggle('open');
+      document.getElementById('settings-toggle').textContent = panel.classList.contains('open') ? '表示設定を閉じる' : '表示設定';
+    });
+    document.getElementById('reset-btn').addEventListener('click', () => {
+      visible = Object.fromEntries(games.map(g => [g.id,true])); save(); render();
+    });
+    render();
+  </script>
 </body>
 </html>
