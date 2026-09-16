@@ -3,34 +3,115 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#f6f7fb">
+  <meta name="theme-color" content="#f7f8fc">
   <title>Nagaita Family</title>
   <style>
-    :root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f2937;background:#f6f7fb}
+    :root{
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      color:#1f2937;
+      background:#f7f8fc;
+    }
     *{box-sizing:border-box}
-    body{margin:0;min-height:100vh;display:grid;place-items:center;padding:24px}
-    main{width:min(760px,100%)}
-    h1{margin:0 0 8px;font-size:clamp(32px,7vw,56px)}
-    .lead{margin:0 0 28px;color:#6b7280}
-    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
-    a{display:block;padding:20px;border-radius:18px;background:#fff;color:inherit;text-decoration:none;box-shadow:0 8px 24px rgba(31,41,55,.08);border:1px solid #e5e7eb}
-    a:hover{transform:translateY(-1px)}
-    strong{display:block;font-size:18px;margin-bottom:6px}
-    span{color:#6b7280;font-size:14px}
-    footer{margin-top:22px;color:#9ca3af;font-size:12px}
+    body{margin:0;min-height:100vh;background:linear-gradient(180deg,#f9fbff 0%,#f7f8fc 100%)}
+    main{width:min(980px,100%);margin:0 auto;padding:40px 20px 56px}
+    .hero{margin-bottom:34px}
+    .eyebrow{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#7b8190;margin-bottom:8px}
+    h1{margin:0;font-size:clamp(38px,7vw,64px);line-height:1.05;letter-spacing:-.03em}
+    .lead{margin:12px 0 0;color:#6b7280;font-size:16px}
+    .section{margin-top:32px}
+    .section-head{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-bottom:14px}
+    h2{margin:0;font-size:24px;letter-spacing:-.02em}
+    .section-note{color:#9ca3af;font-size:13px}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+    .card{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      min-height:132px;
+      padding:20px;
+      border-radius:24px;
+      background:#fff;
+      color:inherit;
+      text-decoration:none;
+      border:1px solid #e8eaf0;
+      box-shadow:0 10px 30px rgba(31,41,55,.07);
+      transition:transform .15s ease,box-shadow .15s ease;
+    }
+    .card:hover{transform:translateY(-2px);box-shadow:0 14px 34px rgba(31,41,55,.11)}
+    .icon{width:64px;height:64px;display:grid;place-items:center;flex:0 0 64px;border-radius:18px;background:#f1f4f9;font-size:32px}
+    .copy{min-width:0}
+    .copy strong{display:block;font-size:19px;line-height:1.2;margin-bottom:7px}
+    .copy span{display:block;color:#6b7280;font-size:14px;line-height:1.5}
+    .open{margin-top:10px;font-size:13px;font-weight:700;color:#4b5563}
+    footer{margin-top:40px;padding-top:18px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:12px}
+    @media (max-width:680px){
+      main{padding:28px 16px 42px}
+      .grid{grid-template-columns:1fr}
+      .card{min-height:116px;padding:17px;border-radius:20px}
+      .icon{width:56px;height:56px;flex-basis:56px;border-radius:16px;font-size:28px}
+      h2{font-size:22px}
+    }
   </style>
 </head>
 <body>
   <main>
-    <h1>Nagaita Family</h1>
-    <p class="lead">Family apps and learning games.</p>
-    <div class="grid">
-      <a href="/miori-word-garden/"><strong>Miori's Word Garden</strong><span>English spelling & word practice</span></a>
-      <a href="/miori-kanji-quest/"><strong>Miori Kanji Quest</strong><span>Kanji learning game</span></a>
-      <a href="/miori-spell-garden/"><strong>Miori's Spell Garden</strong><span>Spelling practice</span></a>
-      <a href="/kosuke-letter-quest/"><strong>Kosuke Letter Quest</strong><span>Letter learning game</span></a>
-    </div>
-    <footer>nagaita-family</footer>
+    <header class="hero">
+      <div class="eyebrow">Nagaita Family</div>
+      <h1>Play & Learn</h1>
+      <p class="lead">みおり・こうすけの学習アプリ置き場</p>
+    </header>
+
+    <section class="section" aria-labelledby="miori-title">
+      <div class="section-head">
+        <h2 id="miori-title">Miori</h2>
+        <div class="section-note">English & Kanji</div>
+      </div>
+      <div class="grid">
+        <a class="card" href="/miori-word-garden/">
+          <div class="icon">🌼</div>
+          <div class="copy">
+            <strong>Miori's Word Garden</strong>
+            <span>英単語を練習して、ガーデンを育てる。</span>
+            <div class="open">OPEN →</div>
+          </div>
+        </a>
+        <a class="card" href="/miori-kanji-quest/">
+          <div class="icon">✏️</div>
+          <div class="copy">
+            <strong>Miori Kanji Quest</strong>
+            <span>漢字を書いて、空島を育てる。</span>
+            <div class="open">OPEN →</div>
+          </div>
+        </a>
+        <a class="card" href="/miori-spell-garden/">
+          <div class="icon">🔤</div>
+          <div class="copy">
+            <strong>Miori's Spell Garden</strong>
+            <span>スペリングをゲーム感覚で練習。</span>
+            <div class="open">OPEN →</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="kosuke-title">
+      <div class="section-head">
+        <h2 id="kosuke-title">Kosuke</h2>
+        <div class="section-note">Letters</div>
+      </div>
+      <div class="grid">
+        <a class="card" href="/kosuke-letter-quest/">
+          <div class="icon">🚀</div>
+          <div class="copy">
+            <strong>Kosuke Letter Quest</strong>
+            <span>アルファベットを遊びながら覚える。</span>
+            <div class="open">OPEN →</div>
+          </div>
+        </a>
+      </div>
+    </section>
+
+    <footer>family.nagaita.jp</footer>
   </main>
 </body>
 </html>
