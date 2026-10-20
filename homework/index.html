@@ -34,7 +34,7 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 @media(max-width:700px){.columns,.fold-content,.formgrid{grid-template-columns:1fr}.field.wide{grid-column:span 1}.shell{padding:16px 12px 48px}.group{padding:12px}header{align-items:center}.card{padding:13px}}
 </style></head><body><main class="shell">
 <header><div><h1>🌷 Miori's Homework</h1><div class="muted small" id="today"></div></div><div class="toplinks"><button class="button small" id="parentLink">For Parents ›</button></div></header>
-<div class="mode" id="modeBanner">宿題データを確認中…</div>
+<div class="mode" id="modeBanner">🔐 宿題データを確認中…</div>
 <section class="fold" id="syncPanel" style="display:none;margin:0 0 17px;padding:12px 16px">
 <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;justify-content:space-between">
 <strong id="syncStatus">🔒 共有は未接続・試作モード</strong><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
@@ -42,7 +42,7 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 <button class="button primary" id="connect">共有に接続</button><button class="button" id="disconnect" hidden>試作モードに戻る</button></div></div>
 <div class="small muted" id="syncHint" style="margin-top:7px">共有設定が有効になった後、家族用コードで進捗を更新できます。保護者用コードなら課題の追加・削除も可能です。</div>
 </section>
-<section class="student" id="student">
+<section class="student" id="student" style="display:none">
 <div class="progress"><div style="display:flex;justify-content:space-between;gap:8px"><strong>今日の進みぐあい</strong><span class="muted" id="progressText"></span></div><div class="track"><div class="fill" id="progressFill" style="width:0%"></div></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:15px">
   <div>
@@ -149,8 +149,11 @@ async function loadPrivateBoard(){
  const secret=localStorage.getItem(BOARD_KEY);
  readOnlyDevice=localStorage.getItem(VIEW_ONLY_STORAGE)==='1';
  if(!secret){
-   el('modeBanner').textContent='🧪 サンプルモード。家族のiPadで初回設定リンクを開くと、PBの実際の宿題を読み込めます。';
-   updatePendingLabel();return;
+   tasks=[];
+   el('parentLink').hidden=true;
+   el('student').style.display='none';
+   el('modeBanner').textContent='🔐 このブラウザーでは初回設定が必要です。家族のiPad用設定リンクを、今開いているSafariで一度開いてください。設定後はFamily Homeから普段どおり使えます。';
+   return;
  }
  el('modeBanner').textContent='🔐 PBの宿題データを読み込み中…';
  try{
@@ -170,12 +173,14 @@ async function loadPrivateBoard(){
    el('handoffLab').hidden=true;
    el('syncPanel').hidden=true;
    el('parentLink').hidden=true;
+   el('student').style.display='';
    el('modeBanner').textContent=readOnlyDevice?'🔐 PBと連携した宿題ボード · 閲覧専用（保存確認済みの進捗）':'🌷 今日の宿題 · チェック後は「PBへ反映」→ChatGPTで送信';
    render();
  }catch(e){
    privateBoard=false;tasks=[];
-   el('modeBanner').textContent='読み込み失敗：'+e.message+'。初回設定リンクまたは通信を確認してください。';
-   render();
+   el('student').style.display='none';
+   el('parentLink').hidden=true;
+   el('modeBanner').textContent='宿題を読み込めませんでした：'+e.message+'。しばらくして再読み込みするか、このブラウザーで初回設定をやり直してください。';
  }
 }
 
