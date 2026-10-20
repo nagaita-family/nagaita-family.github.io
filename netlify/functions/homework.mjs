@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
-const REPO = "nagaitashouten-star/personal-brain";
+const REPO = () => env("HOMEWORK_GITHUB_REPO");
 const FILE = "Homework/state.json";
 const BRANCH = "main";
 const ORIGIN = "https://family.nagaita.jp";
@@ -42,9 +42,9 @@ function ghHeaders() {
     "content-type": "application/json"
   };
 }
-const fileUrl = "https://api.github.com/repos/" + REPO + "/contents/" + FILE;
+const fileUrl = () => "https://api.github.com/repos/" + REPO() + "/contents/" + FILE;
 async function readBoard() {
-  const res = await fetch(fileUrl + "?ref=" + BRANCH, { headers: ghHeaders(), cache: "no-store" });
+  const res = await fetch(fileUrl() + "?ref=" + BRANCH, { headers: ghHeaders(), cache: "no-store" });
   if (res.status === 404) return { state: emptyState(), sha: null };
   if (!res.ok) throw new Error("GitHub read failed (" + res.status + ")");
   const j = await res.json();
@@ -62,7 +62,7 @@ async function writeBoard(state, sha) {
     content: Buffer.from(JSON.stringify(state, null, 2) + "\n").toString("base64")
   };
   if (sha) data.sha = sha;
-  const res = await fetch(fileUrl, { method: "PUT", headers: ghHeaders(), body: JSON.stringify(data) });
+  const res = await fetch(fileUrl(), { method: "PUT", headers: ghHeaders(), body: JSON.stringify(data) });
   if (res.status === 409 || res.status === 422) return false;
   if (!res.ok) throw new Error("GitHub write failed (" + res.status + ")");
   return true;
@@ -133,7 +133,7 @@ export default async function handler(req) {
   if (!["GET","POST"].includes(req.method)) return reply({error:"Method not allowed"},405);
   const token = env("HOMEWORK_GITHUB_TOKEN");
   const role = authorize(req);
-  if (!token || token.length < 30 || role === "unconfigured") return reply({error:"Sync has not been configured"},503);
+  if (!REPO() || !/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(REPO()) || !token || token.length < 30 || role === "unconfigured") return reply({error:"Sync has not been configured"},503);
   if (!role) return reply({error:"Invalid access code"},401);
   try {
     if (req.method === "GET") {
