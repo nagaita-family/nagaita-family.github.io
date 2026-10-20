@@ -49,9 +49,12 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
     <div><strong>🧪 ChatGPTへの受け渡しテスト</strong>
       <div class="small muted" style="margin-top:4px">サンプル文だけを開きます。実際の宿題は送信・PB保存しません。</div>
     </div>
-    <a id="chatgptHandoffTest" class="button primary" rel="noopener noreferrer" target="_blank" href="https://chatgpt.com/">ChatGPTで試す ↗</a>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <a id="chatgptHandoffTest" class="button" rel="noopener noreferrer" target="_blank" href="https://chatgpt.com/">通常チャットで試す ↗</a>
+      <a id="pbHandoffTest" class="button primary" rel="noopener noreferrer" target="_blank" href="https://chatgpt.com/" hidden>PBプロジェクトで試す ↗</a>
+    </div>
   </div>
-  <p class="small muted" style="margin:9px 0 0">開いたChatGPTの入力欄に「宿題アプリからの動作テスト」が入っているか確認してください。送信は不要です。</p>
+  <p class="small muted" style="margin:9px 0 0" id="handoffHelp">テスト文章が入力欄に入るか確認します。送信は不要です。</p>
 </section>
 <div class="columns"><section class="group"><header><h2>🔤 English</h2></header><div id="english"></div></section><section class="group"><header><h2>📚 国語・算数・ほか</h2></header><div id="other"></div></section></div>
 <details class="fold"><summary>できたことを見る <span id="doneCount"></span></summary><div id="doneTasks" class="fold-content"></div></details>
@@ -187,6 +190,30 @@ el('modeBanner').textContent='🧪 試作モード：チェックはこの端末
 el('syncHint').textContent='家族の共有データに接続するにはアクセスコードを入力してください。';uiStatus();render()};
 const handoffPrompt='【宿題アプリからの動作テスト】これはサンプルです。PBへの記録依頼ではありません。入力欄に「宿題アプリからの動作テスト」が見えたら成功です。送信する必要はありません。';
 el('chatgptHandoffTest').href='https://chatgpt.com/?prompt='+encodeURIComponent(handoffPrompt);
+const PROJECT_STORAGE='miori-homework-pb-project-path-v1';
+const PROJECT_PATH_PATTERN=new RegExp('^/g/g-p-[a-zA-Z0-9]+/project/?$');
+// PBプロジェクトURLは公開コードではなく、この端末にだけ保存
+const incoming=new URLSearchParams(window.location.search).get('pb_project');
+if(incoming){
+ try{
+   const candidate=new URL(incoming);
+   if(candidate.origin!=='https://chatgpt.com'||!PROJECT_PATH_PATTERN.test(candidate.pathname))throw Error('Invalid project URL');
+   if(window.confirm('このiPadにPBプロジェクトのリンクを登録して、動作テストしますか？')){
+     localStorage.setItem(PROJECT_STORAGE,candidate.pathname);
+   }
+ }catch(e){el('handoffHelp').textContent='プロジェクトURLの形式を確認できませんでした。'}
+ const cleaned=new URL(window.location.href);
+ cleaned.searchParams.delete('pb_project');
+ window.history.replaceState(null,'',cleaned.pathname+cleaned.search+cleaned.hash);
+}
+const pbPath=localStorage.getItem(PROJECT_STORAGE);
+if(pbPath&&PROJECT_PATH_PATTERN.test(pbPath)){
+ el('pbHandoffTest').href='https://chatgpt.com'+pbPath+'?prompt='+encodeURIComponent(handoffPrompt);
+ el('pbHandoffTest').hidden=false;
+ el('handoffHelp').textContent='PBプロジェクトで開いて、テスト文章が入力欄に入るか確認してください。送信は不要。PB保存もしません。';
+}else{
+ el('handoffHelp').textContent='PBプロジェクトの設定リンクを一度開くと、新しいテストボタンが表示されます。';
+}
 const existing=sessionStorage.getItem(SESSION_KEY);if(existing)connect(existing);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 setInterval(refresh,45000);
