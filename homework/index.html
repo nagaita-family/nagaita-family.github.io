@@ -44,6 +44,15 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 </section>
 <section class="student" id="student">
 <div class="progress"><div style="display:flex;justify-content:space-between;gap:8px"><strong>今日の進みぐあい</strong><span class="muted" id="progressText"></span></div><div class="track"><div class="fill" id="progressFill" style="width:0%"></div></div></div>
+<section class="fold" id="handoffLab" style="margin:0 0 19px;padding:15px 18px">
+  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
+    <div><strong>🧪 ChatGPTへの受け渡しテスト</strong>
+      <div class="small muted" style="margin-top:4px">サンプル文だけを開きます。実際の宿題は送信・PB保存しません。</div>
+    </div>
+    <a id="chatgptHandoffTest" class="button primary" rel="noopener noreferrer" target="_blank" href="https://chatgpt.com/">ChatGPTで試す ↗</a>
+  </div>
+  <p class="small muted" style="margin:9px 0 0">開いたChatGPTの入力欄に「宿題アプリからの動作テスト」が入っているか確認してください。送信は不要です。</p>
+</section>
 <div class="columns"><section class="group"><header><h2>🔤 English</h2></header><div id="english"></div></section><section class="group"><header><h2>📚 国語・算数・ほか</h2></header><div id="other"></div></section></div>
 <details class="fold"><summary>できたことを見る <span id="doneCount"></span></summary><div id="doneTasks" class="fold-content"></div></details>
 <details class="fold"><summary>前の宿題を見る <span id="oldCount"></span></summary><div id="oldTasks" class="fold-content"></div></details>
@@ -176,6 +185,8 @@ el('disconnect').onclick=()=>{remote=false;syncCode='';syncRole=null;tasks=loadD
 el('accessCode').hidden=false;el('connect').hidden=false;el('disconnect').hidden=true;
 el('modeBanner').textContent='🧪 試作モード：チェックはこの端末内に保存され、家族とは同期されません。実際の学校情報は入力しないでください。';
 el('syncHint').textContent='家族の共有データに接続するにはアクセスコードを入力してください。';uiStatus();render()};
+const handoffPrompt='【宿題アプリからの動作テスト】これはサンプルです。PBへの記録依頼ではありません。入力欄に「宿題アプリからの動作テスト」が見えたら成功です。送信する必要はありません。';
+el('chatgptHandoffTest').href='https://chatgpt.com/?prompt='+encodeURIComponent(handoffPrompt);
 const existing=sessionStorage.getItem(SESSION_KEY);if(existing)connect(existing);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 setInterval(refresh,45000);
