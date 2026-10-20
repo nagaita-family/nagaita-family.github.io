@@ -34,7 +34,7 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 @media(max-width:700px){.columns,.fold-content,.formgrid{grid-template-columns:1fr}.field.wide{grid-column:span 1}.shell{padding:16px 12px 48px}.group{padding:12px}header{align-items:center}.card{padding:13px}}
 </style></head><body><main class="shell">
 <header><div><h1>🌷 Miori's Homework</h1><div class="muted small" id="today"></div></div><div class="toplinks"><button class="button small" id="parentLink">For Parents ›</button></div></header>
-<div class="mode" id="modeBanner">🧪 操作体験用の試作版です。例題だけを表示しています。変更はこの端末内だけに保存されます。実際の学校情報・個人情報は入力しないでください。</div>
+<div class="mode" id="modeBanner">宿題データを確認中…</div>
 <section class="fold" id="syncPanel" style="display:none;margin:0 0 17px;padding:12px 16px">
 <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;justify-content:space-between">
 <strong id="syncStatus">🔒 共有は未接続・試作モード</strong><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
@@ -46,12 +46,12 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 <div class="progress"><div style="display:flex;justify-content:space-between;gap:8px"><strong>今日の進みぐあい</strong><span class="muted" id="progressText"></span></div><div class="track"><div class="fill" id="progressFill" style="width:0%"></div></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:15px">
   <div>
-    <strong style="font-size:14px">PBへ反映する（試験中）</strong>
-    <div class="small muted" id="pbReportState">まだ家のiPad内の記録です。テスト送信では本物の宿題を変更しません。</div>
+    <strong style="font-size:14px">PBへ反映</strong>
+    <div class="small muted" id="pbReportState">アプリのチェックはiPad内に保存されます。PBへの更新は別途送信が必要です。</div>
   </div>
-  <a class="button primary" id="pbReportTest" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" style="min-height:46px;display:inline-flex;align-items:center">PBへ反映を試す ↗</a>
+  <a class="button primary" id="pbReportTest" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" style="min-height:46px;display:inline-flex;align-items:center">PBへ反映 ↗</a>
 </div></div>
-<section class="fold" id="handoffLab" style="margin:0 0 19px;padding:15px 18px">
+<section class="fold" id="handoffLab" style="display:none;margin:0 0 19px;padding:15px 18px">
   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
     <div><strong>🧪 ChatGPTへの受け渡しテスト</strong>
       <div class="small muted" style="margin-top:4px">サンプル文だけを開きます。実際の宿題は送信・PB保存しません。</div>
@@ -84,6 +84,97 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 </main><script>
 (()=>{'use strict';
 const KEY='miori-homework-prototype-v1';
+const BOARD_KEY='miori-homework-view-key-v1';
+const LOCAL_EDITS_KEY='miori-homework-pending-v1';
+let privateBoard=false, privateState=null, pending={changes:{},reportId:null};
+const b64ToBytes=text=>{
+ const norm=text.replace(/-/g,'+').replace(/_/g,'/');
+ const bin=atob(norm+'='.repeat((4-norm.length%4)%4));
+ return Uint8Array.from(bin,c=>c.charCodeAt(0));
+};
+function hasPending(){return Object.keys(pending.changes||{}).length>0}
+function progressOnly(t){return {done:!!t.done,steps:(t.steps||[false,false]).map(Boolean),count:Number(t.count||0)}}
+function progressMatch(a,b){
+ if(a.kind==='check')return !!a.done===!!b.done;
+ if(a.kind==='steps')return !!a.steps?.[0]===!!b.steps?.[0]&&!!a.steps?.[1]===!!b.steps?.[1];
+ return Number(a.count||0)===Number(b.count||0);
+}
+function markLocalEdit(t){
+ if(!privateBoard)return;
+ if(!pending.changes)pending.changes={};
+ pending.changes[t.id]=progressOnly(t);
+ if(!pending.reportId)pending.reportId=crypto.randomUUID();
+ localStorage.setItem(LOCAL_EDITS_KEY,JSON.stringify(pending));
+}
+function updatePendingLabel(){
+ const node=el('pbReportState'),button=el('pbReportTest');
+ if(privateBoard){
+   const n=Object.keys(pending.changes||{}).length;
+   node.textContent=n?('PB未反映：'+n+'件の変更があります。ボタン→ChatGPT送信→「PB保存済み」を確認してください。')
+     :'PBにある状態を表示しています。変更はありません。';
+   button.textContent=n?'PBへ反映 ↗':'反映する変更なし';
+   button.setAttribute('aria-disabled',n?'false':'true');
+   button.style.opacity=n?'1':'.55';
+ }else{
+   node.textContent='サンプルモード：まだ本物の宿題を読み込んでいません。';
+   button.textContent='PBへ反映は準備中';
+   button.setAttribute('aria-disabled','true');
+   button.style.opacity='.55';
+ }
+}
+async function decryptSnapshot(viewKey){
+ const response=await fetch('./data.enc.json?now='+Date.now(),{cache:'no-store'});
+ if(!response.ok)throw Error('暗号化データを取得できません（HTTP '+response.status+'）');
+ const envelope=await response.json();
+ if(envelope.schema!==1||envelope.alg!=='AES-256-GCM'||envelope.compression!=='gzip')throw Error('データ形式を認識できません');
+ const imported=await crypto.subtle.importKey('raw',b64ToBytes(viewKey),'AES-GCM',false,['decrypt']);
+ const plainCompressed=await crypto.subtle.decrypt({name:'AES-GCM',iv:b64ToBytes(envelope.nonce)},imported,b64ToBytes(envelope.data));
+ if(typeof DecompressionStream!=='function')throw Error('このブラウザーは圧縮データの展開に対応していません');
+ const text=await new Response(new Blob([plainCompressed]).stream().pipeThrough(new DecompressionStream('gzip'))).text();
+ const parsed=JSON.parse(text);
+ if(parsed.schema!==1||!Array.isArray(parsed.tasks))throw Error('宿題データの形式が不正です');
+ return parsed;
+}
+async function loadPrivateBoard(){
+ const params=new URLSearchParams(location.hash.slice(1));
+ const provided=params.get('unlock');
+ if(provided){
+   // URL fragment は通信先へ送られない。設定後はアドレスから消す。
+   if(/^[a-zA-Z0-9_-]{43}$/.test(provided))localStorage.setItem(BOARD_KEY,provided);
+   history.replaceState(null,'',location.pathname+location.search);
+ }
+ const secret=localStorage.getItem(BOARD_KEY);
+ if(!secret){
+   el('modeBanner').textContent='🧪 サンプルモード。家族のiPadで初回設定リンクを開くと、PBの実際の宿題を読み込めます。';
+   updatePendingLabel();return;
+ }
+ el('modeBanner').textContent='🔐 PBの宿題データを読み込み中…';
+ try{
+   const current=await decryptSnapshot(secret);
+   privateState=current;
+   privateBoard=true;remote=false;
+   try{const edits=JSON.parse(localStorage.getItem(LOCAL_EDITS_KEY));if(edits&&typeof edits==='object'&&edits.changes)pending=edits}catch(e){}
+   const fresh=current.tasks.map(t=>({...t}));
+   for(const t of fresh){
+     const previous=pending.changes?.[t.id];
+     if(!previous)continue;
+     if(progressMatch(t,previous)){delete pending.changes[t.id];continue}
+     Object.assign(t,previous);
+   }
+   localStorage.setItem(LOCAL_EDITS_KEY,JSON.stringify(pending));
+   tasks=fresh;
+   el('handoffLab').hidden=true;
+   el('syncPanel').hidden=true;
+   el('parentLink').hidden=true;
+   el('modeBanner').textContent='🔐 PBの宿題ボード · 家のiPadのチェック結果は「PBへ反映」で送信できます';
+   render();
+ }catch(e){
+   privateBoard=false;tasks=[];
+   el('modeBanner').textContent='読み込み失敗：'+e.message+'。初回設定リンクまたは通信を確認してください。';
+   render();
+ }
+}
+
 const API='https://miori-homework-sync.netlify.app/.netlify/functions/homework';
 const SESSION_KEY='miori-homework-session-code';
 let remote=false, syncRole=null, syncCode='', syncBusy=false;
@@ -145,7 +236,7 @@ const samples=[
 {id:'o4',subject:'other',title:'前の宿題（例）',detail:'以前の未完了サンプル',kind:'check',bucket:'old',done:false}
 ];
 let tasks;try{const j=JSON.parse(localStorage.getItem(KEY));tasks=Array.isArray(j)?j:samples.map(x=>({...x}))}catch(e){tasks=samples.map(x=>({...x}))}
-const el=id=>document.getElementById(id),persist=()=>{if(!remote)localStorage.setItem(KEY,JSON.stringify(tasks));render()};
+const el=id=>document.getElementById(id),persist=(edited=null)=>{if(privateBoard){if(edited)markLocalEdit(edited)}else if(!remote)localStorage.setItem(KEY,JSON.stringify(tasks));render()};
 const complete=t=>t.kind==='check'?!!t.done:t.kind==='steps'?Array.isArray(t.steps)&&t.steps.every(Boolean):Number(t.count||0)>=Number(t.target||1);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=new Date();el('today').textContent=new Intl.DateTimeFormat('ja-JP',{month:'long',day:'numeric',weekday:'long'}).format(today);
@@ -165,14 +256,16 @@ if(remote){
  else if(action==='plus'||action==='minus'){op.field='increment';op.delta=action==='plus'?1:-1}
  else return;
  remoteWrite(op);return;
-}if(action==='done')t.done=checked;if(action==='s0')t.steps[0]=checked;if(action==='s1')t.steps[1]=checked;if(action==='plus')t.count=Math.min(t.target,(t.count||0)+1);if(action==='minus')t.count=Math.max(0,(t.count||0)-1);persist()}
+}if(action==='done')t.done=checked;if(action==='s0')t.steps[0]=checked;if(action==='s1')t.steps[1]=checked;if(action==='plus')t.count=Math.min(t.target,(t.count||0)+1);if(action==='minus')t.count=Math.max(0,(t.count||0)-1);persist(t)}
 function render(){['english','other','doneTasks','oldTasks','parentList'].forEach(id=>el(id).replaceChildren());
-const active=tasks.filter(t=>t.bucket!=='old'&&!complete(t));const finished=tasks.filter(t=>complete(t));const old=tasks.filter(t=>t.bucket==='old'&&!complete(t));
+const nowIso=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
+const effectiveBucket=t=>t.bucket==='old'||(t.dueDate&&t.dueDate<nowIso)?'old':t.bucket;
+const active=tasks.filter(t=>effectiveBucket(t)!=='old'&&!complete(t));const finished=tasks.filter(t=>complete(t));const old=tasks.filter(t=>effectiveBucket(t)==='old'&&!complete(t));
 for(const subject of ['english','other']){const dest=el(subject);const here=active.filter(t=>t.subject===subject);here.sort((a,b)=>(a.bucket==='today'?0:1)-(b.bucket==='today'?0:1));if(!here.length)dest.innerHTML='<p class="muted small">今の宿題は全部できたね！</p>';for(const t of here){if(t.bucket==='future'&&!dest.querySelector('.subgroup')){const p=document.createElement('div');p.className='subgroup';p.textContent='少しずつ進める';dest.append(p)}dest.append(card(t));}}
 finished.forEach(t=>el('doneTasks').append(card(t)));old.forEach(t=>el('oldTasks').append(card(t)));
 el('doneCount').textContent=finished.length?'('+finished.length+')':'';el('oldCount').textContent=old.length?'('+old.length+')':'';
-const current=tasks.filter(t=>t.bucket==='today');const n=current.filter(complete).length;el('progressText').textContent=n+' / '+current.length;el('progressFill').style.width=(current.length?n/current.length*100:100)+'%';
-el('total').textContent='('+tasks.length+')';
+const current=tasks.filter(t=>effectiveBucket(t)==='today');const n=current.filter(complete).length;el('progressText').textContent=n+' / '+current.length;el('progressFill').style.width=(current.length?n/current.length*100:100)+'%';
+el('total').textContent='('+tasks.length+')';updatePendingLabel();
 tasks.forEach(t=>{const row=document.createElement('div');row.className='parentrow';const meta=document.createElement('span');meta.innerHTML='<strong>'+esc(t.title)+'</strong><div class="small muted">'+(t.subject==='english'?'English':'その他')+' · '+(complete(t)?'完了':t.bucket==='today'?'今日':t.bucket==='future'?'少しずつ':'前の宿題')+'</div>';const del=document.createElement('button');del.className='button small';del.textContent='削除';del.disabled=remote&&syncRole!=='parent';
 del.onclick=()=>{if(remote){if(syncRole!=='parent')return;if(confirm('この課題を共有ボードから削除しますか？'))remoteWrite({action:'remove',taskId:t.id})}
 else{tasks=tasks.filter(x=>x.id!==t.id);persist()}};row.append(meta,del);el('parentList').append(row)})}
@@ -197,27 +290,27 @@ el('modeBanner').textContent='🧪 試作モード：チェックはこの端末
 el('syncHint').textContent='家族の共有データに接続するにはアクセスコードを入力してください。';uiStatus();render()};
 const handoffPrompt='【宿題アプリからの動作テスト】これはサンプルです。PBへの記録依頼ではありません。入力欄に「宿題アプリからの動作テスト」が見えたら成功です。送信する必要はありません。';
 // テスト段階では固定のサンプルIDと進捗だけを送る。実際の学校情報を公開URLへ入れない。
-function makePbTestPrompt(){
-  const sampleIds=new Set(['e1','e2','e3','o1','o2','o3','o4']);
-  const snapshot=tasks.filter(t=>sampleIds.has(t.id)).map(t=>{
-    if(t.kind==='steps')return [t.id,Number(!!t.steps?.[0]),Number(!!t.steps?.[1])];
-    if(t.kind==='count'||t.kind==='pages')return [t.id,Number(t.count||0),Number(t.target||1)];
-    return [t.id,Number(!!t.done)];
-  });
-  const report={
-    test_id:'miori-homework-handoff-'+new Date().toISOString().slice(0,10),
-    test_only:true,
-    sample_progress:snapshot
-  };
-  return '【宿題アプリ→通常ChatGPT→PBの接続テスト】接続済みGitHubで非公開repo nagaitashouten-star/personal-brain の main を読み、Homework/handoff-test.json だけに次のテストJSONを保存してください。'+
-    '実際の宿題、Homework/state.json、Daily、その他のファイルは変更しないでください。'+
-    '既存ファイルが同一内容なら更新せず、異なる場合は最新SHAで最小更新してください。'+
-    '保存後に再読込して完全一致を確認し、成功時だけ「PB保存済み」、失敗時は「PB未反映」と答えてください。テストJSON：'+JSON.stringify(report);
+function makePbReportPrompt(){
+ if(!privateBoard||!hasPending())return '';
+ const updates=Object.entries(pending.changes).map(([id,change])=>({id,...change}));
+ const report={report_id:pending.reportId||crypto.randomUUID(),view_updatedAt:privateState?.updatedAt||null,updates};
+ return '【美織・宿題ボードのPB反映依頼】これは家のiPad上でチェックした実際の宿題の進捗です。'+
+ '接続済みGitHubで非公開リポジトリ nagaitashouten-star/personal-brain の main にある Homework/state.json を取得し、'+
+ 'updates の各idに一致する既存課題の done／steps／count だけを反映してください。'+
+ '他の課題の追加・削除・学校連絡原文の改変・未記載の完了推測は禁止。'+
+ 'すでに同じ結果なら重複更新せず、最新本文とSHAを再取得して競合を避け、recentOpsにreport_idを重複なく登録して updatedAt を更新してください。'+
+ 'その後、変更があった項目について当日Dailyに学校連絡と区別した実施記録を重複なく残してください。'+
+ '保存後に state.json と Daily の両方を再読込し検証してください。'+
+ '可能なら同じPBの Homework/README.md と Homework/view-key.json の方針に従い暗号化した表示用スナップショットを公開GitHubの homework/data.enc.json に更新してください。鍵は絶対に公開ファイルへ書かないでください。'+
+ '各保存先の成否を区別し、state.json とDailyが検証できた場合のみ「PB保存済み」と報告。'+
+ '検証できない箇所は「PB未反映」と明示。完了済み記録を勝手に取り消さず、該当タスクだけを照合してください。'+
+ '反映データ：'+JSON.stringify(report);
 }
 el('pbReportTest').addEventListener('click',ev=>{
-  if(remote){ev.preventDefault();el('pbReportState').textContent='共有モードではこのテストは使えません。';return}
-  ev.currentTarget.href='https://chatgpt.com/?prompt='+encodeURIComponent(makePbTestPrompt());
-  el('pbReportState').textContent='ChatGPTにテスト文を渡しました。「送信」を押して、PB保存済みの返答を確認してね。アプリからはまだ保存結果を確認できません。';
+ const prompt=makePbReportPrompt();
+ if(!prompt){ev.preventDefault();return;}
+ ev.currentTarget.href='https://chatgpt.com/?prompt='+encodeURIComponent(prompt);
+ el('pbReportState').textContent='ChatGPTで「送信」を押し、PB保存済みの返答を確認してください。アプリ内ではまだ反映待ちです。';
 });
 el('chatgptHandoffTest').href='https://chatgpt.com/?prompt='+encodeURIComponent(handoffPrompt);
 const PROJECT_STORAGE='miori-homework-pb-project-path-v1';
@@ -248,5 +341,6 @@ if(pbPath&&PROJECT_PATH_PATTERN.test(pbPath)){
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 setInterval(refresh,45000);
 render();
+loadPrivateBoard();
 })();
 </script></body></html>
