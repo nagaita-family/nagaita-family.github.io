@@ -35,7 +35,7 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 </style></head><body><main class="shell">
 <header><div><h1>🌷 Miori's Homework</h1><div class="muted small" id="today"></div></div><div class="toplinks"><button class="button small" id="parentLink">For Parents ›</button></div></header>
 <div class="mode" id="modeBanner">🧪 操作体験用の試作版です。例題だけを表示しています。変更はこの端末内だけに保存されます。実際の学校情報・個人情報は入力しないでください。</div>
-<section class="fold" id="syncPanel" style="margin:0 0 17px;padding:12px 16px">
+<section class="fold" id="syncPanel" style="display:none;margin:0 0 17px;padding:12px 16px">
 <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;justify-content:space-between">
 <strong id="syncStatus">🔒 共有は未接続・試作モード</strong><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
 <input id="accessCode" type="password" placeholder="家族用／保護者用アクセスコード" autocomplete="off" aria-label="アクセスコード" style="width:min(260px,56vw);min-height:42px">
@@ -43,7 +43,14 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 <div class="small muted" id="syncHint" style="margin-top:7px">共有設定が有効になった後、家族用コードで進捗を更新できます。保護者用コードなら課題の追加・削除も可能です。</div>
 </section>
 <section class="student" id="student">
-<div class="progress"><div style="display:flex;justify-content:space-between;gap:8px"><strong>今日の進みぐあい</strong><span class="muted" id="progressText"></span></div><div class="track"><div class="fill" id="progressFill" style="width:0%"></div></div></div>
+<div class="progress"><div style="display:flex;justify-content:space-between;gap:8px"><strong>今日の進みぐあい</strong><span class="muted" id="progressText"></span></div><div class="track"><div class="fill" id="progressFill" style="width:0%"></div></div>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:15px">
+  <div>
+    <strong style="font-size:14px">PBへ反映する（試験中）</strong>
+    <div class="small muted" id="pbReportState">まだ家のiPad内の記録です。テスト送信では本物の宿題を変更しません。</div>
+  </div>
+  <a class="button primary" id="pbReportTest" href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer" style="min-height:46px;display:inline-flex;align-items:center">PBへ反映を試す ↗</a>
+</div></div>
 <section class="fold" id="handoffLab" style="margin:0 0 19px;padding:15px 18px">
   <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">
     <div><strong>🧪 ChatGPTへの受け渡しテスト</strong>
@@ -189,6 +196,29 @@ el('accessCode').hidden=false;el('connect').hidden=false;el('disconnect').hidden
 el('modeBanner').textContent='🧪 試作モード：チェックはこの端末内に保存され、家族とは同期されません。実際の学校情報は入力しないでください。';
 el('syncHint').textContent='家族の共有データに接続するにはアクセスコードを入力してください。';uiStatus();render()};
 const handoffPrompt='【宿題アプリからの動作テスト】これはサンプルです。PBへの記録依頼ではありません。入力欄に「宿題アプリからの動作テスト」が見えたら成功です。送信する必要はありません。';
+// テスト段階では固定のサンプルIDと進捗だけを送る。実際の学校情報を公開URLへ入れない。
+function makePbTestPrompt(){
+  const sampleIds=new Set(['e1','e2','e3','o1','o2','o3','o4']);
+  const snapshot=tasks.filter(t=>sampleIds.has(t.id)).map(t=>{
+    if(t.kind==='steps')return [t.id,Number(!!t.steps?.[0]),Number(!!t.steps?.[1])];
+    if(t.kind==='count'||t.kind==='pages')return [t.id,Number(t.count||0),Number(t.target||1)];
+    return [t.id,Number(!!t.done)];
+  });
+  const report={
+    test_id:'miori-homework-handoff-'+new Date().toISOString().slice(0,10),
+    test_only:true,
+    sample_progress:snapshot
+  };
+  return '【宿題アプリ→通常ChatGPT→PBの接続テスト】接続済みGitHubで非公開repo nagaitashouten-star/personal-brain の main を読み、Homework/handoff-test.json だけに次のテストJSONを保存してください。'+
+    '実際の宿題、Homework/state.json、Daily、その他のファイルは変更しないでください。'+
+    '既存ファイルが同一内容なら更新せず、異なる場合は最新SHAで最小更新してください。'+
+    '保存後に再読込して完全一致を確認し、成功時だけ「PB保存済み」、失敗時は「PB未反映」と答えてください。テストJSON：'+JSON.stringify(report);
+}
+el('pbReportTest').addEventListener('click',ev=>{
+  if(remote){ev.preventDefault();el('pbReportState').textContent='共有モードではこのテストは使えません。';return}
+  ev.currentTarget.href='https://chatgpt.com/?prompt='+encodeURIComponent(makePbTestPrompt());
+  el('pbReportState').textContent='ChatGPTにテスト文を渡しました。「送信」を押して、PB保存済みの返答を確認してね。アプリからはまだ保存結果を確認できません。';
+});
 el('chatgptHandoffTest').href='https://chatgpt.com/?prompt='+encodeURIComponent(handoffPrompt);
 const PROJECT_STORAGE='miori-homework-pb-project-path-v1';
 const PROJECT_PATH_PATTERN=new RegExp('^/g/g-p-[a-zA-Z0-9]+/project/?$');
@@ -214,7 +244,7 @@ if(pbPath&&PROJECT_PATH_PATTERN.test(pbPath)){
 }else{
  el('handoffHelp').textContent='PBプロジェクトの設定リンクを一度開くと、新しいテストボタンが表示されます。';
 }
-const existing=sessionStorage.getItem(SESSION_KEY);if(existing)connect(existing);
+// Netlify同期は一時停止。GitHub Pagesのデモはローカル保存のまま利用する。
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
 setInterval(refresh,45000);
 render();
