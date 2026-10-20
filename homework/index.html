@@ -34,7 +34,14 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 @media(max-width:700px){.columns,.fold-content,.formgrid{grid-template-columns:1fr}.field.wide{grid-column:span 1}.shell{padding:16px 12px 48px}.group{padding:12px}header{align-items:center}.card{padding:13px}}
 </style></head><body><main class="shell">
 <header><div><h1>🌷 Miori's Homework</h1><div class="muted small" id="today"></div></div><div class="toplinks"><button class="button small" id="parentLink">For Parents ›</button></div></header>
-<div class="mode">🧪 操作体験用の試作版です。例題だけを表示しています。変更内容はこの端末のブラウザー内だけに保存され、家族の端末やPBには同期されません。実際の学校情報・個人情報は入力しないでください。</div>
+<div class="mode" id="modeBanner">🧪 操作体験用の試作版です。例題だけを表示しています。変更はこの端末内だけに保存されます。実際の学校情報・個人情報は入力しないでください。</div>
+<section class="fold" id="syncPanel" style="margin:0 0 17px;padding:12px 16px">
+<div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;justify-content:space-between">
+<strong id="syncStatus">🔒 共有は未接続・試作モード</strong><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
+<input id="accessCode" type="password" placeholder="家族用／保護者用アクセスコード" autocomplete="off" aria-label="アクセスコード" style="width:min(260px,56vw);min-height:42px">
+<button class="button primary" id="connect">共有に接続</button><button class="button" id="disconnect" hidden>試作モードに戻る</button></div></div>
+<div class="small muted" id="syncHint" style="margin-top:7px">共有設定が有効になった後、家族用コードで進捗を更新できます。保護者用コードなら課題の追加・削除も可能です。</div>
+</section>
 <section class="student" id="student">
 <div class="progress"><div style="display:flex;justify-content:space-between;gap:8px"><strong>今日の進みぐあい</strong><span class="muted" id="progressText"></span></div><div class="track"><div class="fill" id="progressFill" style="width:0%"></div></div></div>
 <div class="columns"><section class="group"><header><h2>🔤 English</h2></header><div id="english"></div></section><section class="group"><header><h2>📚 国語・算数・ほか</h2></header><div id="other"></div></section></div>
@@ -42,7 +49,7 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 <details class="fold"><summary>前の宿題を見る <span id="oldCount"></span></summary><div id="oldTasks" class="fold-content"></div></details>
 </section>
 <section class="parent" id="parent"><button class="button" id="back">‹ 美織の画面へ戻る</button><h2 style="margin-top:22px">Parent page（試作）</h2>
-<div class="notice">新しい宿題を仮登録し、画面でどう見えるか試せます。学校PDF・写真の自動取り込み、アカウント認証、家族共有保存は未接続です。個人情報や実際の宿題はまだ入力しないでください。</div>
+<div class="notice" id="parentNotice">試作モードです。学校PDF・写真の自動取り込みは未接続です。実際の学校情報はまだ入力しないでください。</div>
 <div class="parent-panel"><h2>宿題を追加して表示テスト</h2><form id="addForm" class="formgrid">
 <label class="field">教科<select name="subject"><option value="english">English</option><option value="other">国語・算数・ほか</option></select></label>
 <label class="field wide">名前<input name="title" required maxlength="60" placeholder="例：Workbook"></label>
@@ -58,6 +65,57 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 </main><script>
 (()=>{'use strict';
 const KEY='miori-homework-prototype-v1';
+const API='https://miori-homework-sync.netlify.app/.netlify/functions/homework';
+const SESSION_KEY='miori-homework-session-code';
+let remote=false, syncRole=null, syncCode='', syncBusy=false;
+const newOpId=()=>crypto.randomUUID().replace(/-/g,'');
+const modeLabel=()=>remote?'✅ 家族共有モード（'+(syncRole==='parent'?'保護者':'家族')+'）':'🔒 共有は未接続・試作モード';
+function uiStatus(msg,isError=false){
+  el('syncStatus').textContent=msg||modeLabel();
+  el('syncStatus').style.color=isError?'#a23f3f':'#3b6755';
+}
+async function requestSync(method,body=null,code=syncCode){
+  const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),18000);
+  try{
+    const res=await fetch(API,{method,headers:{Authorization:'Bearer '+code,...(body?{'Content-Type':'application/json'}:{})},body:body?JSON.stringify(body):undefined,cache:'no-store',signal:controller.signal});
+    const j=await res.json().catch(()=>({}));
+    if(!res.ok)throw new Error(j.error||('HTTP '+res.status));
+    return j;
+  }finally{clearTimeout(timeout)}
+}
+function loadDemo(){
+  try{const saved=JSON.parse(localStorage.getItem(KEY));return Array.isArray(saved)?saved:samples.map(x=>({...x}))}
+  catch(e){return samples.map(x=>({...x}))}
+}
+async function connect(code){
+  if(!code||code.length<16){uiStatus('16文字以上のアクセスコードが必要です',true);return;}
+  uiStatus('接続を確認中…');
+  try{
+    const j=await requestSync('GET',null,code);
+    if(!j.state||!Array.isArray(j.state.tasks)||!['family','parent'].includes(j.role))throw Error('Unexpected response');
+    syncCode=code;syncRole=j.role;remote=true;tasks=j.state.tasks;
+    sessionStorage.setItem(SESSION_KEY,code);
+    el('accessCode').value='';el('accessCode').hidden=true;el('connect').hidden=true;el('disconnect').hidden=false;
+    el('modeBanner').textContent='🔐 家族共有モード：宿題の確認・更新は非公開GitHubと同期します。学校資料の自動取り込みは準備中です。';
+    el('syncHint').textContent='別の端末で更新した内容は定期的に再取得します。保存に失敗した場合は画面に表示します。';
+    uiStatus();render();
+  }catch(e){uiStatus('接続できません：'+e.message,true);sessionStorage.removeItem(SESSION_KEY)}
+}
+async function refresh(){
+  if(!remote||syncBusy||document.hidden)return;
+  try{const j=await requestSync('GET');tasks=j.state.tasks;uiStatus();render();}
+  catch(e){uiStatus('最新情報を取得できません：'+e.message,true)}
+}
+async function remoteWrite(operation){
+  if(syncBusy)return;syncBusy=true;uiStatus('保存中…');
+  try{
+    const j=await requestSync('POST',{opId:newOpId(),...operation});
+    if(!j.ok||!j.state||!Array.isArray(j.state.tasks))throw Error('Save was not verified');
+    tasks=j.state.tasks;uiStatus('✅ 保存済み・家族と共有');render();
+  }catch(e){uiStatus('保存結果を確認できません：'+e.message,true);try{const j=await requestSync('GET');tasks=j.state.tasks;render()}catch{}}
+  finally{syncBusy=false}
+}
+
 const samples=[
 {id:'e1',subject:'english',title:'Reading',detail:'1ページ読もう',kind:'check',bucket:'today',done:false},
 {id:'e2',subject:'english',title:'Poetry',detail:'家族に5回聞いてもらおう',kind:'count',target:5,count:0,bucket:'future'},
@@ -68,7 +126,7 @@ const samples=[
 {id:'o4',subject:'other',title:'前の宿題（例）',detail:'以前の未完了サンプル',kind:'check',bucket:'old',done:false}
 ];
 let tasks;try{const j=JSON.parse(localStorage.getItem(KEY));tasks=Array.isArray(j)?j:samples.map(x=>({...x}))}catch(e){tasks=samples.map(x=>({...x}))}
-const el=id=>document.getElementById(id),persist=()=>{localStorage.setItem(KEY,JSON.stringify(tasks));render()};
+const el=id=>document.getElementById(id),persist=()=>{if(!remote)localStorage.setItem(KEY,JSON.stringify(tasks));render()};
 const complete=t=>t.kind==='check'?!!t.done:t.kind==='steps'?Array.isArray(t.steps)&&t.steps.every(Boolean):Number(t.count||0)>=Number(t.target||1);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=new Date();el('today').textContent=new Intl.DateTimeFormat('ja-JP',{month:'long',day:'numeric',weekday:'long'}).format(today);
@@ -80,7 +138,15 @@ if(t.kind==='count'||t.kind==='pages'){const n=Math.max(0,Math.min(Number(t.coun
 node.innerHTML='<div class="card-title"><span class="'+(complete(t)?'done-title':'')+'">'+esc(t.title)+'</span>'+(type?'<span class="tag">'+type+'</span>':'')+'</div><div class="detail">'+esc(t.detail)+'</div><div class="actions">'+controls+'</div>';
 node.querySelectorAll('[data-action]').forEach(control=>{control.addEventListener('change',()=>act(t.id,control.dataset.action,control.checked));if(control.tagName==='BUTTON')control.addEventListener('click',()=>act(t.id,control.dataset.action));});
 return node}
-function act(id,action,checked){const t=tasks.find(x=>x.id===id);if(!t)return;if(action==='done')t.done=checked;if(action==='s0')t.steps[0]=checked;if(action==='s1')t.steps[1]=checked;if(action==='plus')t.count=Math.min(t.target,(t.count||0)+1);if(action==='minus')t.count=Math.max(0,(t.count||0)-1);persist()}
+function act(id,action,checked){const t=tasks.find(x=>x.id===id);if(!t)return;
+if(remote){
+ let op={action:'progress',taskId:id};
+ if(action==='done'){op.field='done';op.value=checked}
+ else if(action==='s0'||action==='s1'){op.step=Number(action[1]);op.value=checked}
+ else if(action==='plus'||action==='minus'){op.field='increment';op.delta=action==='plus'?1:-1}
+ else return;
+ remoteWrite(op);return;
+}if(action==='done')t.done=checked;if(action==='s0')t.steps[0]=checked;if(action==='s1')t.steps[1]=checked;if(action==='plus')t.count=Math.min(t.target,(t.count||0)+1);if(action==='minus')t.count=Math.max(0,(t.count||0)-1);persist()}
 function render(){['english','other','doneTasks','oldTasks','parentList'].forEach(id=>el(id).replaceChildren());
 const active=tasks.filter(t=>t.bucket!=='old'&&!complete(t));const finished=tasks.filter(t=>complete(t));const old=tasks.filter(t=>t.bucket==='old'&&!complete(t));
 for(const subject of ['english','other']){const dest=el(subject);const here=active.filter(t=>t.subject===subject);here.sort((a,b)=>(a.bucket==='today'?0:1)-(b.bucket==='today'?0:1));if(!here.length)dest.innerHTML='<p class="muted small">今の宿題は全部できたね！</p>';for(const t of here){if(t.bucket==='future'&&!dest.querySelector('.subgroup')){const p=document.createElement('div');p.className='subgroup';p.textContent='少しずつ進める';dest.append(p)}dest.append(card(t));}}
@@ -88,11 +154,31 @@ finished.forEach(t=>el('doneTasks').append(card(t)));old.forEach(t=>el('oldTasks
 el('doneCount').textContent=finished.length?'('+finished.length+')':'';el('oldCount').textContent=old.length?'('+old.length+')':'';
 const current=tasks.filter(t=>t.bucket==='today');const n=current.filter(complete).length;el('progressText').textContent=n+' / '+current.length;el('progressFill').style.width=(current.length?n/current.length*100:100)+'%';
 el('total').textContent='('+tasks.length+')';
-tasks.forEach(t=>{const row=document.createElement('div');row.className='parentrow';const meta=document.createElement('span');meta.innerHTML='<strong>'+esc(t.title)+'</strong><div class="small muted">'+(t.subject==='english'?'English':'その他')+' · '+(complete(t)?'完了':t.bucket==='today'?'今日':t.bucket==='future'?'少しずつ':'前の宿題')+'</div>';const del=document.createElement('button');del.className='button small';del.textContent='削除';del.onclick=()=>{tasks=tasks.filter(x=>x.id!==t.id);persist()};row.append(meta,del);el('parentList').append(row)})}
-el('parentLink').onclick=()=>{el('student').classList.add('hidden');el('parent').classList.add('active');window.scrollTo(0,0)};
+tasks.forEach(t=>{const row=document.createElement('div');row.className='parentrow';const meta=document.createElement('span');meta.innerHTML='<strong>'+esc(t.title)+'</strong><div class="small muted">'+(t.subject==='english'?'English':'その他')+' · '+(complete(t)?'完了':t.bucket==='today'?'今日':t.bucket==='future'?'少しずつ':'前の宿題')+'</div>';const del=document.createElement('button');del.className='button small';del.textContent='削除';del.disabled=remote&&syncRole!=='parent';
+del.onclick=()=>{if(remote){if(syncRole!=='parent')return;if(confirm('この課題を共有ボードから削除しますか？'))remoteWrite({action:'remove',taskId:t.id})}
+else{tasks=tasks.filter(x=>x.id!==t.id);persist()}};row.append(meta,del);el('parentList').append(row)})}
+el('parentLink').onclick=()=>{
+el('student').classList.add('hidden');el('parent').classList.add('active');window.scrollTo(0,0);
+el('parentNotice').textContent=remote?(syncRole==='parent'?'保護者用コードで接続中。課題の追加・削除もGitHubへ保存します。':'家族コードで接続中。課題の追加・削除は保護者コードが必要です。'):'試作モード。課題の追加・削除はこの端末だけに反映されます。実際の学校情報は入力しないでください。';
+el('addForm').style.display=remote&&syncRole!=='parent'?'none':'grid';
+el('reset').hidden=remote;
+};
 el('back').onclick=()=>{el('parent').classList.remove('active');el('student').classList.remove('hidden');window.scrollTo(0,0)};
-el('addForm').onsubmit=ev=>{ev.preventDefault();const f=new FormData(ev.target),kind=f.get('kind'),target=Math.max(1,Math.min(50,Number(f.get('target')||5)));const t={id:'custom-'+Date.now()+'-'+Math.random().toString(36).slice(2),subject:f.get('subject'),title:String(f.get('title')).trim(),detail:String(f.get('detail')).trim(),kind,bucket:f.get('bucket'),target,count:0,done:false,steps:[false,false]};if(!t.title)return;tasks.push(t);ev.target.reset();persist()};
-el('reset').onclick=()=>{if(confirm('この端末の試作データを初期化しますか？')){tasks=samples.map(x=>structuredClone(x));persist()}};
+el('addForm').onsubmit=ev=>{ev.preventDefault();if(remote&&syncRole!=='parent'){uiStatus('課題追加には保護者コードが必要です',true);return;}
+const f=new FormData(ev.target),kind=f.get('kind'),target=Math.max(1,Math.min(50,Number(f.get('target')||5)));
+const t={id:'task-'+newOpId(),subject:f.get('subject'),title:String(f.get('title')).trim(),detail:String(f.get('detail')).trim(),kind,bucket:f.get('bucket'),target,count:0,done:false,steps:[false,false]};
+if(!t.title)return;if(remote){remoteWrite({action:'add',task:t});}else{tasks.push(t);persist()}ev.target.reset()};
+el('reset').onclick=()=>{if(remote){uiStatus('共有データの一括初期化はできません',true);return}
+if(confirm('この端末の試作データを初期化しますか？')){tasks=samples.map(x=>structuredClone(x));persist()}};
+el('connect').onclick=()=>connect(el('accessCode').value.trim());
+el('accessCode').addEventListener('keydown',e=>{if(e.key==='Enter')connect(e.target.value.trim())});
+el('disconnect').onclick=()=>{remote=false;syncCode='';syncRole=null;tasks=loadDemo();sessionStorage.removeItem(SESSION_KEY);
+el('accessCode').hidden=false;el('connect').hidden=false;el('disconnect').hidden=true;
+el('modeBanner').textContent='🧪 試作モード：チェックはこの端末内に保存され、家族とは同期されません。実際の学校情報は入力しないでください。';
+el('syncHint').textContent='家族の共有データに接続するにはアクセスコードを入力してください。';uiStatus();render()};
+const existing=sessionStorage.getItem(SESSION_KEY);if(existing)connect(existing);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});
+setInterval(refresh,45000);
 render();
 })();
 </script></body></html>
