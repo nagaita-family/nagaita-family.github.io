@@ -86,7 +86,8 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 const KEY='miori-homework-prototype-v1';
 const BOARD_KEY='miori-homework-view-key-v1';
 const LOCAL_EDITS_KEY='miori-homework-pending-v1';
-let privateBoard=false, privateState=null, pending={changes:{},reportId:null};
+let privateBoard=false, privateState=null, readOnlyDevice=false, pending={changes:{},reportId:null};
+const VIEW_ONLY_STORAGE='miori-homework-view-only-v1';
 const b64ToBytes=text=>{
  const norm=text.replace(/-/g,'+').replace(/_/g,'/');
  const bin=atob(norm+'='.repeat((4-norm.length%4)%4));
@@ -100,7 +101,7 @@ function progressMatch(a,b){
  return Number(a.count||0)===Number(b.count||0);
 }
 function markLocalEdit(t){
- if(!privateBoard)return;
+ if(!privateBoard||readOnlyDevice)return;
  if(!pending.changes)pending.changes={};
  pending.changes[t.id]=progressOnly(t);
  if(!pending.reportId)pending.reportId=crypto.randomUUID();
@@ -109,6 +110,8 @@ function markLocalEdit(t){
 function updatePendingLabel(){
  const node=el('pbReportState'),button=el('pbReportTest');
  if(privateBoard){
+   if(readOnlyDevice){node.textContent='閲覧専用：PBに確認済みの進捗を表示しています。';button.hidden=true;return;}
+   button.hidden=false;
    const n=Object.keys(pending.changes||{}).length;
    node.textContent=n?('PB未反映：'+n+'件の変更があります。ボタン→ChatGPT送信→「PB保存済み」を確認してください。')
      :'PBにある状態を表示しています。変更はありません。';
@@ -140,10 +143,11 @@ async function loadPrivateBoard(){
  const provided=params.get('unlock');
  if(provided){
    // URL fragment は通信先へ送られない。設定後はアドレスから消す。
-   if(/^[a-zA-Z0-9_-]{43}$/.test(provided))localStorage.setItem(BOARD_KEY,provided);
+   if(/^[a-zA-Z0-9_-]{43}$/.test(provided)){localStorage.setItem(BOARD_KEY,provided);localStorage.setItem(VIEW_ONLY_STORAGE,params.get('readonly')==='1'?'1':'0');}
    history.replaceState(null,'',location.pathname+location.search);
  }
  const secret=localStorage.getItem(BOARD_KEY);
+ readOnlyDevice=localStorage.getItem(VIEW_ONLY_STORAGE)==='1';
  if(!secret){
    el('modeBanner').textContent='🧪 サンプルモード。家族のiPadで初回設定リンクを開くと、PBの実際の宿題を読み込めます。';
    updatePendingLabel();return;
@@ -166,7 +170,7 @@ async function loadPrivateBoard(){
    el('handoffLab').hidden=true;
    el('syncPanel').hidden=true;
    el('parentLink').hidden=true;
-   el('modeBanner').textContent='🔐 PBの宿題ボード · 家のiPadのチェック結果は「PBへ反映」で送信できます';
+   el('modeBanner').textContent=readOnlyDevice?'🔐 PBの宿題ボード · 閲覧専用（反映済みの情報）':'🔐 PBの宿題ボード · チェック後は「PBへ反映」でChatGPTに送信できます';
    render();
  }catch(e){
    privateBoard=false;tasks=[];
@@ -247,8 +251,8 @@ if(t.kind==='steps')controls='<label class="step"><input type="checkbox" data-ac
 if(t.kind==='count'||t.kind==='pages'){const n=Math.max(0,Math.min(Number(t.count||0),Number(t.target||1)));controls='<button class="button" data-action="minus" aria-label="1戻す">−</button><span class="counter">'+n+' / '+Number(t.target||1)+'</span><button class="button primary" data-action="plus" aria-label="1進める" '+(n>=t.target?'disabled':'')+'>＋</button><span class="small muted">'+(t.kind==='count'?'回':'ページ')+'</span>'}
 node.innerHTML='<div class="card-title"><span class="'+(complete(t)?'done-title':'')+'">'+esc(t.title)+'</span>'+(type?'<span class="tag">'+type+'</span>':'')+'</div><div class="detail">'+esc(t.detail)+'</div><div class="actions">'+controls+'</div>';
 node.querySelectorAll('[data-action]').forEach(control=>{control.addEventListener('change',()=>act(t.id,control.dataset.action,control.checked));if(control.tagName==='BUTTON')control.addEventListener('click',()=>act(t.id,control.dataset.action));});
-return node}
-function act(id,action,checked){const t=tasks.find(x=>x.id===id);if(!t)return;
+if(readOnlyDevice)node.querySelectorAll('[data-action]').forEach(control=>{control.disabled=true;control.setAttribute('aria-disabled','true')});return node}
+function act(id,action,checked){if(readOnlyDevice)return;const t=tasks.find(x=>x.id===id);if(!t)return;
 if(remote){
  let op={action:'progress',taskId:id};
  if(action==='done'){op.field='done';op.value=checked}
