@@ -52,6 +52,11 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 .practice-bottom{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
 .practice-mark{min-height:43px;font-weight:700}
 .practice-mark.is-marked{background:#eaf5ed;border-color:#a7d3b4;color:#306c4c}
+.practice-foot{display:flex;gap:1px;white-space:nowrap;top:14px;font-size:14px;font-weight:700;color:#377e65}
+.practice-count{font-size:12px;color:#377e65}
+.practice-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.practice-controls .button{min-height:44px;touch-action:manipulation}
+.practice-number{font-size:15px;font-weight:750;color:#397c5c;min-width:50px;text-align:center}
 </style></head><body><main class="shell">
 <header><div><h1>🌷 Miori's Homework</h1><div class="muted small" id="today"></div></div><div class="toplinks"><button class="button small" id="refreshHomework" type="button" aria-label="宿題一覧を最新に更新">↻ Refresh</button><button class="button small" id="parentLink">For Parents ›</button></div></header>
 <div class="mode" id="modeBanner">🔐 宿題データを確認中…</div>
@@ -176,19 +181,37 @@ const b64ToBytes=text=>{
  return Uint8Array.from(bin,c=>c.charCodeAt(0));
 };
 function hasPending(){return Object.keys(pending.changes||{}).length>0}
+function getPracticeCounts(t){
+ const counts={};
+ for(const day of Array.isArray(t?.practiceDays)?t.practiceDays:[]){
+  if(/^\d{4}-\d{2}-\d{2}$/.test(day))counts[day]=1;
+ }
+ for(const [day,value] of Object.entries(t?.practiceCounts||{})){
+  const n=Number(value);
+  if(/^\d{4}-\d{2}-\d{2}$/.test(day)&&Number.isInteger(n)&&n>0&&n<=99)counts[day]=Math.max(counts[day]||0,n);
+ }
+ return counts;
+}
 function progressOnly(t){
  if(t.kind==='practice'){
   const saved=privateState?.tasks?.find(item=>item.id===t.id);
-  const confirmed=new Set(saved?.practiceDays||[]);
-  return {practiceDaysAdd:[...new Set(t.practiceDays||[])].filter(day=>!confirmed.has(day)).sort()};
+  const baseline=getPracticeCounts(saved);
+  const changes={};
+  for(const [day,n] of Object.entries(getPracticeCounts(t))){
+   if(n>(baseline[day]||0))changes[day]=n;
+  }
+  return {practiceCountsSet:changes};
  }
  return {done:!!t.done,steps:(t.steps||[false,false]).map(Boolean),count:Number(t.count||0)};
 }
 function progressMatch(a,b){
- if(a.kind==='practice')return (b.practiceDaysAdd||[]).every(day=>(a.practiceDays||[]).includes(day));
+ if(a.kind==='practice'){
+  const saved=getPracticeCounts(a);
+  if(b.practiceCountsSet)return Object.entries(b.practiceCountsSet).every(([day,n])=>(saved[day]||0)>=n);
+  return (b.practiceDaysAdd||[]).every(day=>(saved[day]||0)>=1);
+ }
  if(a.kind==='check')return !!a.done===!!b.done;
  if(a.kind==='steps')return !!a.steps?.[0]===!!b.steps?.[0]&&!!a.steps?.[1]===!!b.steps?.[1];
- // For count/pages, all circles filled is NOT the same as Done.
  return Number(a.count||0)===Number(b.count||0)&&!!a.done===!!b.done;
 }
 function markLocalEdit(t){
@@ -196,7 +219,7 @@ function markLocalEdit(t){
  if(!pending.changes)pending.changes={};
  const firstChange=!hasPending();
  const next=progressOnly(t);
- if(t.kind==='practice'&&!next.practiceDaysAdd.length){
+ if(t.kind==='practice'&&!Object.keys(next.practiceCountsSet).length){
   delete pending.changes[t.id];
   if(!hasPending()){pending.reportId=null;pending.submittedReportId=null;}
   persistPendingDraft();return;
@@ -275,7 +298,15 @@ async function loadPrivateBoard(){
        if(!previous)continue;
        if(progressMatch(t,previous)){delete pending.changes[t.id];continue}
        if(t.kind==='practice'){
-        t.practiceDays=[...new Set([...(t.practiceDays||[]),...(previous.practiceDaysAdd||[])])].sort();
+        const counts=getPracticeCounts(t);
+        for(const [day,n] of Object.entries(previous.practiceCountsSet||{})){
+         if(/^\d{4}-\d{2}-\d{2}$/.test(day)&&Number.isInteger(n)&&n>0&&n<=99)counts[day]=Math.max(counts[day]||0,n);
+        }
+        for(const day of previous.practiceDaysAdd||[]){
+         if(/^\d{4}-\d{2}-\d{2}$/.test(day))counts[day]=Math.max(counts[day]||0,1);
+        }
+        t.practiceCounts=counts;
+        t.practiceDays=Object.keys(counts).sort();
         continue;
        }
        Object.assign(t,previous);
@@ -381,7 +412,8 @@ const dayIndex=date=>/^\d{4}-\d{2}-\d{2}$/.test(date||'')?Date.parse(date+'T00:0
 function practiceCard(t){
  const node=document.createElement('article');
  node.className='card';
- const days=[...new Set(Array.isArray(t.practiceDays)?t.practiceDays:[])].filter(d=>Number.isFinite(dayIndex(d))).sort();
+ const counts=getPracticeCounts(t);
+ const days=Object.keys(counts).filter(d=>Number.isFinite(dayIndex(d))).sort();
  const todayIso=tokyoToday();
  const begin=dayIndex(t.startDate),end=dayIndex(t.dueDate),now=dayIndex(todayIso);
  const valid=Number.isFinite(begin)&&Number.isFinite(end)&&end>begin;
@@ -390,30 +422,33 @@ function practiceCard(t){
  const progress=walked/total*100;
  const prints=days.filter(d=>valid&&dayIndex(d)>=begin&&dayIndex(d)<=end).map(d=>{
   const where=(dayIndex(d)-begin)/total*100;
-  return '<span class="practice-foot" style="left:'+where+'%" aria-hidden="true">👣</span>';
+  return '<span class="practice-foot" style="left:'+where+'%" aria-hidden="true">👣'+
+    (counts[d]>1?'<span class="practice-count">×'+counts[d]+'</span>':'')+'</span>';
  }).join('');
  const remaining=Number.isFinite(end)?Math.ceil(end-now):null;
  const distance=remaining===null?'日付を確認中':remaining<0?'テスト終了':remaining===0?'今日がテスト！':'あと'+remaining+'日';
  const dateLabel=typeof t.dueDate==='string'?t.dueDate.slice(5).replace('-','/'):'日付未設定';
  const estimate=t.dueType==='estimated'?'（目安）':'';
- const confirmed=new Set(privateState?.tasks?.find(item=>item.id===t.id)?.practiceDays||[]);
- const marked=days.includes(todayIso);
- const locked=confirmed.has(todayIso);
- const actionText=marked?'✓ 今日の練習を記録したよ':'○ 今日、練習した！';
+ const currentCount=counts[todayIso]||0;
+ const confirmedCount=getPracticeCounts(privateState?.tasks?.find(item=>item.id===t.id))[todayIso]||0;
+ const totalCount=Object.values(counts).reduce((sum,n)=>sum+n,0);
  node.innerHTML='<div class="card-title"><span>'+esc(t.title)+'</span><span class="tag">テストの準備</span></div>'+
   '<div class="detail">'+esc(t.detail||'紙でもアプリでもOK')+'</div>'+
   '<div class="practice-route">'+
    '<div class="practice-meta"><span>いま ●</span><strong>🏁 '+esc(dateLabel)+esc(estimate)+'　'+esc(distance)+'</strong></div>'+
-   (valid?'<div class="practice-rail" role="img" aria-label="テストまで'+esc(distance)+'。練習した日'+days.length+'日">'+
+   (valid?'<div class="practice-rail" role="img" aria-label="テストまで'+esc(distance)+'。練習した日'+days.length+'日、合計'+totalCount+'回">'+
     '<div class="practice-past" style="width:'+progress+'%"></div>'+
     '<span class="practice-position" style="left:'+progress+'%"></span>'+
     '<span class="practice-flag" aria-hidden="true">⚑</span>'+prints+'</div>':
     '<p class="small muted">テストの日付を登録すると、ここにゴールまでの道が表示されます。</p>')+
-   '<div class="practice-bottom"><span class="muted small">👣 '+days.length+'日、練習したよ</span>'+
-   '<button type="button" class="button practice-mark'+(marked?' is-marked':'')+'" data-action="practice-day" aria-pressed="'+marked+'"'+
-   (readOnlyDevice||locked?' disabled':'')+'>'+actionText+'</button></div>'+
+   '<div class="practice-bottom"><span class="muted small">👣 '+days.length+'日・合計'+totalCount+'回</span>'+
+    '<div class="practice-controls"><button type="button" class="button" data-action="practice-minus" aria-label="今日の練習を1回減らす"'+
+    (readOnlyDevice||currentCount<=confirmedCount?' disabled':'')+'>−</button>'+
+    '<span class="practice-number" aria-live="polite">今日 '+currentCount+'回</span>'+
+    '<button type="button" class="button primary" data-action="practice-plus" aria-label="今日の練習を1回追加"'+
+    (readOnlyDevice||currentCount>=99?' disabled':'')+'>＋ 1回</button></div></div>'+
   '</div>';
- node.querySelector('[data-action="practice-day"]').addEventListener('click',()=>act(t.id,'practice-day'));
+ node.querySelectorAll('[data-action^="practice-"]').forEach(button=>button.addEventListener('click',()=>act(t.id,button.dataset.action)));
  return node;
 }
 function card(t){if(t.kind==='practice')return practiceCard(t);const node=document.createElement('article');node.className='card';const type= t.bucket==='future'?'少しずつ':t.bucket==='old'?'前の宿題':'';
@@ -438,14 +473,17 @@ if(readOnlyDevice)node.querySelectorAll('[data-action]').forEach(control=>{contr
 function act(id,action,checked,selected){
  if(readOnlyDevice)return;
  const t=tasks.find(x=>x.id===id);if(!t)return;
- if(action==='practice-day'){
-  if(!privateBoard)return;
+ if(action==='practice-plus'||action==='practice-minus'){
+  if(!privateBoard||t.kind!=='practice')return;
   const date=tokyoToday();
-  const confirmed=privateState?.tasks?.find(item=>item.id===id)?.practiceDays||[];
-  if(confirmed.includes(date))return;
-  const days=new Set(t.practiceDays||[]);
-  if(days.has(date))days.delete(date);else days.add(date);
-  t.practiceDays=[...days].sort();
+  const counts=getPracticeCounts(t);
+  const confirmed=getPracticeCounts(privateState?.tasks?.find(item=>item.id===id))[date]||0;
+  const current=counts[date]||0;
+  const next=action==='practice-plus'?Math.min(99,current+1):Math.max(confirmed,current-1);
+  if(next===current)return;
+  if(next===0)delete counts[date];else counts[date]=next;
+  t.practiceCounts=counts;
+  t.practiceDays=Object.keys(counts).sort();
   persist(t);return;
  }
  const isMulti=t.kind==='count'||t.kind==='pages';
@@ -522,7 +560,7 @@ function makePbReportPrompt(){
  const report={report_id:pending.reportId,view_updatedAt:privateState?.updatedAt||null,updates};
  return '【美織・宿題ボードのPB反映依頼】これは家のiPad上でチェックした実際の宿題の進捗です。'+
  '接続済みGitHubで非公開リポジトリ nagaitashouten-star/personal-brain の main にある Homework/state.json を取得し、'+
- 'updates の各idに一致する既存課題を特定してください。通常課題は done／steps／count だけを変更し、kind:practice 課題の practiceDaysAdd は正しいYYYY-MM-DDの日付だけを既存practiceDaysに重複なく追加してください。ほかの練習日を消したり、アプリを開いただけで実施扱いにしたりしないでください。count／pages課題は回数・ページ数がtargetに達しただけでは完了とせず、iPadで最後のDoneが押されてdone:trueと報告されたときだけ完了にしてください。'+
+ 'updates の各idに一致する既存課題を特定してください。通常課題は done／steps／count だけを変更してください。kind:practice の練習報告は practiceCountsSet を日付ごとの正の整数回数として処理し、既存practiceCountsの同じ日付と大きい方を保存してください。既存practiceDaysだけにある日付は最低1回とみなし、practiceDaysは回数が1以上の日付を重複なく保持してください。旧報告practiceDaysAddがあれば該当日を最低1回として扱ってください。複数回練習は朝夜・紙やアプリを問わず1日ごとに回数を足跡×Nで表示するための記録です。未記載の練習日を消したり、アプリを開いただけで実施扱いにしたりしないでください。既存recentOpsのreport_idによる重複防止とSHAの最新確認を守ってください。count／pages課題は回数・ページ数がtargetに達しただけでは完了とせず、iPadで最後のDoneが押されてdone:trueと報告されたときだけ完了にしてください。'+
  '他の課題の追加・削除・学校連絡原文の改変・未記載の完了推測は禁止。'+
  'すでに同じ結果なら重複更新せず、最新本文とSHAを再取得して競合を避け、recentOpsにreport_idを重複なく登録して updatedAt を更新してください。'+
  'その後、変更があった項目について当日Dailyに学校連絡と区別した実施記録を重複なく残してください。'+
