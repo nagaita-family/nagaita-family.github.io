@@ -323,9 +323,9 @@ function makePbReportPrompt(){
  'すでに同じ結果なら重複更新せず、最新本文とSHAを再取得して競合を避け、recentOpsにreport_idを重複なく登録して updatedAt を更新してください。'+
  'その後、変更があった項目について当日Dailyに学校連絡と区別した実施記録を重複なく残してください。'+
  '保存後に state.json と Daily の両方を再読込し検証してください。'+
- '可能なら同じPBの Homework/README.md と Homework/view-key.json の方針に従い暗号化した表示用スナップショットを公開GitHubの homework/data.enc.json に更新してください。鍵は絶対に公開ファイルへ書かないでください。'+
- '各保存先の成否を区別し、state.json とDailyが検証できた場合のみ「PB保存済み」と報告。'+
- '検証できない箇所は「PB未反映」と明示。完了済み記録を勝手に取り消さず、該当タスクだけを照合してください。'+
+ '公開用の暗号化表示データは非公開PBのHomework/state.json更新を契機として既存のGitHub Actions「PB Homework Encrypted Publisher」が自動生成・公開します。通常はChatGPTが暗号化処理や公開GitHubへの直接書込みを重複実行しないでください。復号鍵を公開・表示しないでください。'+
+ 'PBのstate.jsonとDailyを保存・再読込検証後、可能なら公開側homework/data.enc.jsonの更新も確認してください。GitHub Actionsは非同期なので、確認前は「PB保存済み／iPad表示更新待ち」と分けて伝えてください。Actionsの失敗が明らかな場合だけHomework/README.mdに沿って安全な手動更新を検討し、その成否を区別してください。'+
+ 'state.jsonとDailyが検証できた場合のみ「PB保存済み」と報告。検証できない箇所は「PB未反映」と明示。完了済み記録を勝手に取り消さず、該当タスクだけを照合してください。'+
  '反映データ：'+JSON.stringify(report);
 }
 el('pbReportTest').addEventListener('click',ev=>{
