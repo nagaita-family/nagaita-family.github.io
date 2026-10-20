@@ -35,6 +35,15 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 </style></head><body><main class="shell">
 <header><div><h1>🌷 Miori's Homework</h1><div class="muted small" id="today"></div></div><div class="toplinks"><button class="button small" id="refreshHomework" type="button" aria-label="宿題一覧を最新に更新">↻ Refresh</button><button class="button small" id="parentLink">For Parents ›</button></div></header>
 <div class="mode" id="modeBanner">🔐 宿題データを確認中…</div>
+<section class="fold" id="homeScreenSetup" hidden aria-labelledby="homeScreenSetupTitle" style="margin:0 0 18px;padding:19px">
+  <h2 id="homeScreenSetupTitle" style="font-size:21px;margin:0 0 9px">このアイコンの初回設定</h2>
+  <p style="margin:0 0 12px;line-height:1.55">ホーム画面から開くアプリはSafariやChromeとは別に設定を保存します。最初の1回だけ、家族用の設定コードを入れてください。</p>
+  <form id="homeScreenSetupForm" style="display:flex;gap:9px;align-items:center;flex-wrap:wrap">
+    <input id="homeScreenSetupKey" aria-label="家族用設定コード" type="password" placeholder="設定コードを1回だけ貼り付け" autocomplete="off" spellcheck="false" autocapitalize="off" style="flex:1;min-width:min(100%,235px);max-width:480px">
+    <button class="button primary" id="homeScreenSetupSave" type="submit" style="min-height:44px">設定して宿題を開く</button>
+  </form>
+  <p id="homeScreenSetupStatus" class="small muted" role="status" aria-live="polite" style="margin:9px 0 0">設定コードはこの端末だけに保存。毎日の入力は不要です。</p>
+</section>
 <section class="fold" id="syncPanel" style="display:none;margin:0 0 17px;padding:12px 16px">
 <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center;justify-content:space-between">
 <strong id="syncStatus">🔒 共有は未接続・試作モード</strong><div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center">
@@ -148,11 +157,13 @@ async function loadPrivateBoard(){
  }
  const secret=localStorage.getItem(BOARD_KEY);
  readOnlyDevice=localStorage.getItem(VIEW_ONLY_STORAGE)==='1';
+ if(secret)el('homeScreenSetup').hidden=true;
  if(!secret){
    tasks=[];
    el('parentLink').hidden=true;
    el('student').style.display='none';
-   el('modeBanner').textContent='🔐 このブラウザーでは初回設定が必要です。家族のiPad用設定リンクを、今開いているSafariで一度開いてください。設定後はFamily Homeから普段どおり使えます。';
+   el('homeScreenSetup').hidden=false;
+   el('modeBanner').textContent='🔐 初回設定が必要です。宿題のサンプルは表示せず、設定後にPBから最新の宿題を取得します。';
    return;
  }
  el('modeBanner').textContent='🔐 PBの宿題データを読み込み中…';
@@ -174,13 +185,15 @@ async function loadPrivateBoard(){
    el('syncPanel').hidden=true;
    el('parentLink').hidden=true;
    el('student').style.display='';
+   el('homeScreenSetup').hidden=true;
    el('modeBanner').textContent=readOnlyDevice?'🔐 PBと連携した宿題ボード · 閲覧専用（保存確認済みの進捗）':'🌷 今日の宿題 · チェック後は「PBへ反映」→ChatGPTで送信';
    render();
  }catch(e){
    privateBoard=false;tasks=[];
    el('student').style.display='none';
    el('parentLink').hidden=true;
-   el('modeBanner').textContent='宿題を読み込めませんでした：'+e.message+'。しばらくして再読み込みするか、このブラウザーで初回設定をやり直してください。';
+   el('homeScreenSetup').hidden=false;
+   el('modeBanner').textContent='宿題を読み込めませんでした：'+e.message+'。少し待ってRefreshするか、設定コードを確認してください。';
  }
 }
 
@@ -347,6 +360,34 @@ if(pbPath&&PROJECT_PATH_PATTERN.test(pbPath)){
  el('handoffHelp').textContent='PBプロジェクトの設定リンクを一度開くと、新しいテストボタンが表示されます。';
 }
 // Netlify同期は一時停止。GitHub Pagesのデモはローカル保存のまま利用する。
+el('homeScreenSetupForm').addEventListener('submit',async ev=>{
+ ev.preventDefault();
+ const entry=el('homeScreenSetupKey');
+ const status=el('homeScreenSetupStatus');
+ const button=el('homeScreenSetupSave');
+ let code=entry.value.trim();
+ // 家族用の設定URLごと貼り付けても読み取れるようにする
+ if(code.includes('#unlock=')){
+   try{code=new URLSearchParams(code.split('#')[1]).get('unlock')||''}catch(e){code=''}
+ }
+ if(!/^[a-zA-Z0-9_-]{43}$/.test(code)){
+   status.textContent='設定コードの形式を確認してください。';
+   return;
+ }
+ button.disabled=true;
+ status.textContent='設定コードを確認して宿題を読み込み中…';
+ try{
+   // 本当に復号できてから保存。無効な鍵を端末に残さない。
+   await decryptSnapshot(code);
+   localStorage.setItem(BOARD_KEY,code);
+   localStorage.setItem(VIEW_ONLY_STORAGE,'0');
+   entry.value='';
+   status.textContent='初回設定を保存しました。';
+   await loadPrivateBoard();
+ }catch(e){
+   status.textContent='読み込めませんでした：'+e.message+'。設定コードや通信状態を確認してください。';
+ }finally{button.disabled=false}
+});
 el('refreshHomework').addEventListener('click',async()=>{
  const b=el('refreshHomework');
  b.disabled=true;
