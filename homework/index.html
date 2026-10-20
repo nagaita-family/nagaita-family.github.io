@@ -390,7 +390,7 @@ function practiceCard(t){
  const progress=walked/total*100;
  const prints=days.filter(d=>valid&&dayIndex(d)>=begin&&dayIndex(d)<=end).map(d=>{
   const where=(dayIndex(d)-begin)/total*100;
-  return '<span class="practice-foot" style="left:'+where+'%" aria-hidden="true">•</span>';
+  return '<span class="practice-foot" style="left:'+where+'%" aria-hidden="true">👣</span>';
  }).join('');
  const remaining=Number.isFinite(end)?Math.ceil(end-now):null;
  const distance=remaining===null?'日付を確認中':remaining<0?'テスト終了':remaining===0?'今日がテスト！':'あと'+remaining+'日';
