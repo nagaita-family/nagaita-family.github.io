@@ -563,7 +563,7 @@ function makePbReportPrompt(){
  'updates の各idに一致する既存課題を特定してください。通常課題は done／steps／count だけを変更してください。kind:practice の練習報告は practiceCountsSet を日付ごとの正の整数回数として処理し、既存practiceCountsの同じ日付と大きい方を保存してください。既存practiceDaysだけにある日付は最低1回とみなし、practiceDaysは回数が1以上の日付を重複なく保持してください。旧報告practiceDaysAddがあれば該当日を最低1回として扱ってください。複数回練習は朝夜・紙やアプリを問わず1日ごとに回数を足跡×Nで表示するための記録です。未記載の練習日を消したり、アプリを開いただけで実施扱いにしたりしないでください。既存recentOpsのreport_idによる重複防止とSHAの最新確認を守ってください。count／pages課題は回数・ページ数がtargetに達しただけでは完了とせず、iPadで最後のDoneが押されてdone:trueと報告されたときだけ完了にしてください。'+
  '他の課題の追加・削除・学校連絡原文の改変・未記載の完了推測は禁止。'+
  'すでに同じ結果なら重複更新せず、最新本文とSHAを再取得して競合を避け、recentOpsにreport_idを重複なく登録して updatedAt を更新してください。'+
- 'その後、変更があった項目について当日Dailyに学校連絡と区別した実施記録を重複なく残してください。'+
+ 'その後、変更があった項目について当日Dailyに学校連絡と区別した実施記録を重複なく残してください。同じ日の練習回数が増えた場合、当日Dailyの既存記録があれば累計を一意に更新して二重計上・重複追記をしないでください。'+
  '保存後に state.json と Daily の両方を再読込し検証してください。'+
  '公開用の暗号化表示データは非公開PBのHomework/state.json更新を契機として既存のGitHub Actions「PB Homework Encrypted Publisher」が自動生成・公開します。通常はChatGPTが暗号化処理や公開GitHubへの直接書込みを重複実行しないでください。復号鍵を公開・表示しないでください。'+
  'PBのstate.jsonとDailyを保存・再読込検証後、可能なら公開側homework/data.enc.jsonの更新も確認してください。GitHub Actionsは非同期なので、確認前は「PB保存済み／iPad表示更新待ち」と分けて伝えてください。Actionsの失敗が明らかな場合だけHomework/README.mdに沿って安全な手動更新を検討し、その成否を区別してください。'+
