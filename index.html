@@ -72,9 +72,9 @@
 
   <script>
     const games = [
+      {id:'homework', person:'miori', name:"Miori's Homework", desc:'今日の宿題と、できたこと。PBにつながる宿題ボード。', icon:'📚', href:'/homework/'},
       {id:'word', person:'miori', name:"Miori's Word Garden", desc:'英単語を練習して、ガーデンを育てる。', icon:'🌼', href:'/miori-word-garden/'},
       {id:'kanji', person:'miori', name:'Miori Kanji Quest', desc:'漢字を書いて、空島を育てる。', icon:'✏️', href:'/miori-kanji-quest/'},
-      {id:'homework', person:'miori', name:"Miori's Homework", desc:'今日やる宿題をひとつずつ。共有設定は準備中。', icon:'📚', href:'/homework/'},
       {id:'spell', person:'miori', name:"Miori's Spell Garden", desc:'スペリングをゲーム感覚で練習。', icon:'🔤', href:'/miori-spell-garden/'},
       {id:'letter', person:'kosuke', name:'Kosuke Letter Quest', desc:'アルファベットを遊びながら覚える。', icon:'🚀', href:'/kosuke-letter-quest/'}
     ];
@@ -142,14 +142,14 @@
     }
 
     function render(){
-      const miori = games.filter(g => g.person==='miori' && visible[g.id]);
+      const miori = games.filter(g => g.person==='miori' && (g.id==='homework' || visible[g.id]));
       const kosuke = games.filter(g => g.person==='kosuke' && visible[g.id]);
       document.getElementById('miori-grid').innerHTML = miori.map(cardHtml).join('');
       document.getElementById('kosuke-grid').innerHTML = kosuke.map(cardHtml).join('');
       document.getElementById('miori-section').style.display = miori.length ? '' : 'none';
       document.getElementById('kosuke-section').style.display = kosuke.length ? '' : 'none';
 
-      document.getElementById('setting-list').innerHTML = games.map(g => `
+      document.getElementById('setting-list').innerHTML = games.filter(g=>g.id!=='homework').map(g => `
         <div class="setting-row">
           <div class="setting-name"><strong>${g.icon} ${g.name}</strong><span>${g.href}</span></div>
           <label class="toggle" aria-label="${g.name}をTOPに表示">
@@ -158,7 +158,7 @@
           </label>
         </div>`).join('');
 
-      const hidden = games.filter(g => !visible[g.id]);
+      const hidden = games.filter(g => g.id!=='homework' && !visible[g.id]);
       const summary = document.getElementById('hidden-summary');
       if(hidden.length){
         summary.innerHTML = `<strong>非表示のゲーム</strong><div class="hidden-list">${hidden.map(g => `<button class="hidden-chip" type="button" data-restore="${g.id}">＋ ${g.name}</button>`).join('')}</div>`;
