@@ -335,7 +335,7 @@ const handoffPrompt='【宿題アプリからの動作テスト】これはサ�
 function makePbReportPrompt(){
  if(!privateBoard||!hasPending())return '';
  const updates=Object.entries(pending.changes).map(([id,change])=>({id,...change}));
- const report={report_id:pending.reportId||crypto.randomUUID(),view_updatedAt:privateState?.updatedAt||null,updates};
+ const report={report_id:pending.reportId,view_updatedAt:privateState?.updatedAt||null,updates};
  return '【美織・宿題ボードのPB反映依頼】これは家のiPad上でチェックした実際の宿題の進捗です。'+
  '接続済みGitHubで非公開リポジトリ nagaitashouten-star/personal-brain の main にある Homework/state.json を取得し、'+
  'updates の各idに一致する既存課題の done／steps／count だけを反映してください。'+
