@@ -138,7 +138,9 @@
     }
 
     function cardHtml(g){
-      return `<a class="card" href="${g.href}"><div class="icon">${g.icon}</div><div class="copy"><strong>${g.name}</strong><span>${g.desc}</span><div class="open">OPEN →</div></div></a>`;
+      // ホームワークだけは毎回新しいHTMLを取りに行く（iPad/Safariの古い試作画面対策）。
+      const url = g.id==='homework' ? g.href+'?refresh='+Date.now() : g.href;
+      return `<a class="card" href="${url}"><div class="icon">${g.icon}</div><div class="copy"><strong>${g.name}</strong><span>${g.desc}</span><div class="open">OPEN →</div></div></a>`;
     }
 
     function render(){
