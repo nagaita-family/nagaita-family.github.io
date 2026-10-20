@@ -112,8 +112,15 @@ function progressMatch(a,b){
 function markLocalEdit(t){
  if(!privateBoard||readOnlyDevice)return;
  if(!pending.changes)pending.changes={};
- pending.changes[t.id]=progressOnly(t);
- if(!pending.reportId)pending.reportId=crypto.randomUUID();
+ const firstChange=!hasPending();
+ const next=progressOnly(t);
+ const changed=JSON.stringify(pending.changes[t.id])!==JSON.stringify(next);
+ // 次の報告や、報告送信後の追加編集では既存の報告IDを再利用しない。
+ if(firstChange||!pending.reportId||(changed&&pending.submittedReportId===pending.reportId)){
+   pending.reportId=crypto.randomUUID();
+   pending.submittedReportId=null;
+ }
+ pending.changes[t.id]=next;
  localStorage.setItem(LOCAL_EDITS_KEY,JSON.stringify(pending));
 }
 function updatePendingLabel(){
@@ -173,13 +180,20 @@ async function loadPrivateBoard(){
    privateBoard=true;remote=false;
    try{const edits=JSON.parse(localStorage.getItem(LOCAL_EDITS_KEY));if(edits&&typeof edits==='object'&&edits.changes)pending=edits}catch(e){}
    const fresh=current.tasks.map(t=>({...t}));
-   for(const t of fresh){
-     const previous=pending.changes?.[t.id];
-     if(!previous)continue;
-     if(progressMatch(t,previous)){delete pending.changes[t.id];continue}
-     Object.assign(t,previous);
+   if(!readOnlyDevice){
+     for(const t of fresh){
+       const previous=pending.changes?.[t.id];
+       if(!previous)continue;
+       if(progressMatch(t,previous)){delete pending.changes[t.id];continue}
+       Object.assign(t,previous);
+     }
+     if(!hasPending()){
+       // recentOps登録済みの旧IDを次の報告で再利用しない。
+       pending.reportId=null;
+       pending.submittedReportId=null;
+     }
+     localStorage.setItem(LOCAL_EDITS_KEY,JSON.stringify(pending));
    }
-   localStorage.setItem(LOCAL_EDITS_KEY,JSON.stringify(pending));
    tasks=fresh;
    el('handoffLab').hidden=true;
    el('syncPanel').hidden=true;
@@ -189,11 +203,17 @@ async function loadPrivateBoard(){
    el('modeBanner').textContent=readOnlyDevice?'🔐 PBと連携した宿題ボード · 閲覧専用（保存確認済みの進捗）':'🌷 今日の宿題 · チェック後は「PBへ反映」→ChatGPTで送信';
    render();
  }catch(e){
-   privateBoard=false;tasks=[];
-   el('student').style.display='none';
-   el('parentLink').hidden=true;
-   el('homeScreenSetup').hidden=false;
-   el('modeBanner').textContent='宿題を読み込めませんでした：'+e.message+'。少し待ってRefreshするか、設定コードを確認してください。';
+   if(privateBoard){
+     // 一時的な通信失敗で未送信チェックと表示を消さない。
+     el('modeBanner').textContent='⚠ 最新データの取得に失敗。表示中の宿題は前回取得した内容です。Refreshでもう一度確認してください。';
+     updatePendingLabel();
+   }else{
+     tasks=[];
+     el('student').style.display='none';
+     el('parentLink').hidden=true;
+     el('homeScreenSetup').hidden=false;
+     el('modeBanner').textContent='宿題を読み込めませんでした：'+e.message+'。少し待ってRefreshするか、設定コードを確認してください。';
+   }
  }
 }
 
@@ -332,6 +352,8 @@ el('pbReportTest').addEventListener('click',ev=>{
  const prompt=makePbReportPrompt();
  if(!prompt){ev.preventDefault();return;}
  ev.currentTarget.href='https://chatgpt.com/?prompt='+encodeURIComponent(prompt);
+ pending.submittedReportId=pending.reportId;
+ localStorage.setItem(LOCAL_EDITS_KEY,JSON.stringify(pending));
  el('pbReportState').textContent='ChatGPTで「送信」を押し、PB保存済みの返答を確認してください。アプリ内ではまだ反映待ちです。';
 });
 el('chatgptHandoffTest').href='https://chatgpt.com/?prompt='+encodeURIComponent(handoffPrompt);
