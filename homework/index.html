@@ -192,7 +192,24 @@ function getPracticeCounts(t){
  }
  return counts;
 }
+function readingInfo(t,day=tokyoToday()){
+ const entry=t?.readingLog?.[day]||{};
+ const value=Number(entry.pages);
+ const pages=Number.isInteger(value)?Math.max(0,Math.min(50,value)):0;
+ return {pages,done:pages>0&&entry.done===true};
+}
+function readingChanges(t){
+ const saved=privateState?.tasks?.find(item=>item.id===t.id);
+ const dates=Object.keys(t.readingLog||{}).filter(day=>/^\d{4}-\d{2}-\d{2}$/.test(day));
+ const entries={};
+ for(const day of dates){
+  const value=readingInfo(t,day),baseline=readingInfo(saved,day);
+  if(value.pages!==baseline.pages||value.done!==baseline.done)entries[day]=value;
+ }
+ return entries;
+}
 function progressOnly(t){
+ if(t.kind==='reading')return {readingLogSet:readingChanges(t)};
  if(t.kind==='practice'){
   const saved=privateState?.tasks?.find(item=>item.id===t.id);
   const baseline=getPracticeCounts(saved);
@@ -205,6 +222,10 @@ function progressOnly(t){
  return {done:!!t.done,steps:(t.steps||[false,false]).map(Boolean),count:Number(t.count||0)};
 }
 function progressMatch(a,b){
+ if(a.kind==='reading')return Object.entries(b.readingLogSet||{}).every(([day,value])=>{
+  const saved=readingInfo(a,day);
+  return saved.pages===value.pages&&saved.done===value.done;
+ });
  if(a.kind==='practice'){
   const saved=getPracticeCounts(a);
   if(b.practiceCountsSet)return Object.entries(b.practiceCountsSet).every(([day,n])=>(saved[day]||0)>=n);
@@ -219,7 +240,7 @@ function markLocalEdit(t){
  if(!pending.changes)pending.changes={};
  const firstChange=!hasPending();
  const next=progressOnly(t);
- if(t.kind==='practice'&&!Object.keys(next.practiceCountsSet).length){
+ if((t.kind==='practice'&&!Object.keys(next.practiceCountsSet).length)||(t.kind==='reading'&&!Object.keys(next.readingLogSet).length)){
   delete pending.changes[t.id];
   if(!hasPending()){pending.reportId=null;pending.submittedReportId=null;}
   persistPendingDraft();return;
@@ -297,6 +318,10 @@ async function loadPrivateBoard(){
        const previous=pending.changes?.[t.id];
        if(!previous)continue;
        if(progressMatch(t,previous)){delete pending.changes[t.id];continue}
+       if(t.kind==='reading'){
+        t.readingLog={...(t.readingLog||{}),...(previous.readingLogSet||{})};
+        continue;
+       }
        if(t.kind==='practice'){
         const counts=getPracticeCounts(t);
         for(const [day,n] of Object.entries(previous.practiceCountsSet||{})){
@@ -403,7 +428,7 @@ const samples=[
 ];
 let tasks;try{const j=JSON.parse(localStorage.getItem(KEY));tasks=Array.isArray(j)?j:samples.map(x=>({...x}))}catch(e){tasks=samples.map(x=>({...x}))}
 const el=id=>document.getElementById(id),persist=(edited=null)=>{if(privateBoard){if(edited)markLocalEdit(edited)}else if(!remote)localStorage.setItem(KEY,JSON.stringify(tasks));render()};
-const complete=t=>t.kind==='practice'?false:t.kind==='check'?!!t.done:t.kind==='steps'?Array.isArray(t.steps)&&t.steps.every(Boolean):(!!t.done&&Number(t.count||0)>=Number(t.target||1));
+const complete=t=>t.kind==='practice'?false:t.kind==='reading'?readingInfo(t).done:t.kind==='check'?!!t.done:t.kind==='steps'?Array.isArray(t.steps)&&t.steps.every(Boolean):(!!t.done&&Number(t.count||0)>=Number(t.target||1));
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const today=new Date();el('today').textContent=new Intl.DateTimeFormat('ja-JP',{month:'long',day:'numeric',weekday:'long'}).format(today);
 
@@ -451,7 +476,26 @@ function practiceCard(t){
  node.querySelectorAll('[data-action^="practice-"]').forEach(button=>button.addEventListener('click',()=>act(t.id,button.dataset.action)));
  return node;
 }
-function card(t){if(t.kind==='practice')return practiceCard(t);const node=document.createElement('article');node.className='card';const type= t.bucket==='future'?'少しずつ':t.bucket==='old'?'前の宿題':'';
+function readingCard(t){
+ const node=document.createElement('article');node.className='card';
+ const day=tokyoToday(),info=readingInfo(t,day);
+ const saved=readingInfo(privateState?.tasks?.find(item=>item.id===t.id),day);
+ const minusDisabled=readOnlyDevice||info.pages<=saved.pages?' disabled':'';
+ const plusDisabled=readOnlyDevice||info.pages>=50?' disabled':'';
+ const doneControl=info.done
+  ?'<span class="finished-tag">✓ 今日のReading Done!</span>'
+  :'<button class="button primary" type="button" data-action="reading-done"'+(readOnlyDevice||info.pages<1?' disabled':'')+'>✓ 今日のReading Done!</button>';
+ node.innerHTML='<div class="card-title"><span class="'+(info.done?'done-title':'')+'">'+esc(t.title)+'</span><span class="tag">毎日</span></div>'+
+  '<div class="detail">'+esc(t.detail)+'</div>'+
+  '<div class="actions"><div class="progress-dots" role="group" aria-label="今日読んだページ数">'+
+  '<button class="button small" type="button" data-action="reading-minus"'+minusDisabled+'>−</button>'+
+  '<strong>今日 '+info.pages+' ページ</strong>'+
+  '<button class="button small" type="button" data-action="reading-plus"'+plusDisabled+'>＋ 1ページ</button></div>'+
+  '<div class="muted small">先生の目標：読む1回につき5ページ以上（必須ではありません）</div>'+doneControl+'</div>';
+ node.querySelectorAll('[data-action]').forEach(button=>button.addEventListener('click',()=>act(t.id,button.dataset.action)));
+ return node;
+}
+function card(t){if(t.kind==='practice')return practiceCard(t);if(t.kind==='reading')return readingCard(t);const node=document.createElement('article');node.className='card';const type= t.bucket==='future'?'少しずつ':t.bucket==='old'?'前の宿題':'';
 let controls='';
 if(t.kind==='check')controls='<label class="step"><input type="checkbox" data-action="done" '+(t.done?'checked':'')+'> '+(t.done?'できた！':'できたらチェック')+'</label>';
 if(t.kind==='steps')controls='<label class="step"><input type="checkbox" data-action="s0" '+(t.steps?.[0]?'checked':'')+'> ① やった</label><label class="step"><input type="checkbox" data-action="s1" '+(t.steps?.[1]?'checked':'')+'> ② STに記録した</label>';
@@ -473,6 +517,20 @@ if(readOnlyDevice)node.querySelectorAll('[data-action]').forEach(control=>{contr
 function act(id,action,checked,selected){
  if(readOnlyDevice)return;
  const t=tasks.find(x=>x.id===id);if(!t)return;
+ if(t.kind==='reading'&&['reading-plus','reading-minus','reading-done'].includes(action)){
+  if(!privateBoard)return;
+  const day=tokyoToday();
+  const info=readingInfo(t,day);
+  const saved=readingInfo(privateState?.tasks?.find(item=>item.id===id),day);
+  if(action==='reading-plus'&&info.pages<50)info.pages++;
+  else if(action==='reading-minus'&&info.pages>saved.pages){
+   info.pages--;if(info.pages===0)info.done=false;
+  }
+  else if(action==='reading-done'&&info.pages>0)info.done=true;
+  else return;
+  t.readingLog={...(t.readingLog||{}),[day]:info};
+  persist(t);return;
+ }
  if(action==='practice-plus'||action==='practice-minus'){
   if(!privateBoard||t.kind!=='practice')return;
   const date=tokyoToday();
@@ -560,7 +618,7 @@ function makePbReportPrompt(){
  const report={report_id:pending.reportId,view_updatedAt:privateState?.updatedAt||null,updates};
  return '【美織・宿題ボードのPB反映依頼】これは家のiPad上でチェックした実際の宿題の進捗です。'+
  '接続済みGitHubで非公開リポジトリ nagaitashouten-star/personal-brain の main にある Homework/state.json を取得し、'+
- 'updates の各idに一致する既存課題を特定してください。通常課題は done／steps／count だけを変更してください。kind:practice の練習報告は practiceCountsSet を日付ごとの正の整数回数として処理し、既存practiceCountsの同じ日付と大きい方を保存してください。既存practiceDaysだけにある日付は最低1回とみなし、practiceDaysは回数が1以上の日付を重複なく保持してください。旧報告practiceDaysAddがあれば該当日を最低1回として扱ってください。複数回練習は朝夜・紙やアプリを問わず1日ごとに回数を足跡×Nで表示するための記録です。未記載の練習日を消したり、アプリを開いただけで実施扱いにしたりしないでください。既存recentOpsのreport_idによる重複防止とSHAの最新確認を守ってください。count／pages課題は回数・ページ数がtargetに達しただけでは完了とせず、iPadで最後のDoneが押されてdone:trueと報告されたときだけ完了にしてください。'+
+ 'updates の各idに一致する既存課題を特定してください。通常課題は done／steps／count だけを変更してください。kind:reading は updates[].readingLogSet の日付ごとの {pages,done} をその日の読書実績として既存readingLogにマージしてください。pagesは0〜50の整数、doneは本人の明示チェックで、5ページ未満でもDone可。過去日や既存記録を消さず、同じ報告IDを再適用しないでください。実際の読書日とページ数をその日付のDailyに重複なく記録してください。kind:practice の練習報告は practiceCountsSet を日付ごとの正の整数回数として処理し、既存practiceCountsの同じ日付と大きい方を保存してください。既存practiceDaysだけにある日付は最低1回とみなし、practiceDaysは回数が1以上の日付を重複なく保持してください。旧報告practiceDaysAddがあれば該当日を最低1回として扱ってください。複数回練習は朝夜・紙やアプリを問わず1日ごとに回数を足跡×Nで表示するための記録です。未記載の練習日を消したり、アプリを開いただけで実施扱いにしたりしないでください。既存recentOpsのreport_idによる重複防止とSHAの最新確認を守ってください。count／pages課題は回数・ページ数がtargetに達しただけでは完了とせず、iPadで最後のDoneが押されてdone:trueと報告されたときだけ完了にしてください。'+
  '他の課題の追加・削除・学校連絡原文の改変・未記載の完了推測は禁止。'+
  'すでに同じ結果なら重複更新せず、最新本文とSHAを再取得して競合を避け、recentOpsにreport_idを重複なく登録して updatedAt を更新してください。'+
  'その後、変更があった項目について当日Dailyに学校連絡と区別した実施記録を重複なく残してください。同じ日の練習回数が増えた場合、当日Dailyの既存記録があれば累計を一意に更新して二重計上・重複追記をしないでください。'+
