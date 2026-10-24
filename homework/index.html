@@ -57,6 +57,28 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 .practice-controls{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
 .practice-controls .button{min-height:44px;touch-action:manipulation}
 .practice-number{font-size:15px;font-weight:750;color:#397c5c;min-width:50px;text-align:center}
+
+/* 見通しの帯：時間帯は宿題のノルマではなく、残りの時間の目安 */
+.chance-panel{background:#fff;border:1px solid #e1e9e4;border-radius:20px;padding:16px 18px;margin-bottom:15px}
+.chance-panel[hidden]{display:none}
+.chance-header{display:flex;align-items:start;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.chance-header h2{font-size:19px;margin:0 0 4px;letter-spacing:-.02em}
+.chance-count{font-weight:750;background:#eef5f0;color:#376c54;border-radius:20px;padding:7px 12px;white-space:nowrap;font-size:14px}
+.chance-meta{font-size:13px;color:#60746b;line-height:1.55}
+.chance-days{display:flex;gap:9px;overflow-x:auto;overscroll-behavior-inline:contain;scroll-snap-type:x proximity;margin:13px 0 10px;padding-bottom:5px}
+.chance-day{flex:1 0 144px;min-width:144px;max-width:200px;background:#f7f9f6;border:1px solid #e5ebe6;border-radius:13px;padding:9px;scroll-snap-align:start}
+.chance-day.is-today{border-color:#8dbaa4;background:#f1f7f2}
+.chance-day-label{font-weight:700;font-size:13px;margin-bottom:8px;text-align:center}
+.chance-periods{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+.chance-period{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:3px;border:1px solid #bed6c7;border-radius:10px;background:#fff;min-height:55px;padding:5px 2px}
+.chance-period-icon{font-size:16px;line-height:1}
+.chance-period-label{font-size:12px;font-weight:700}
+.chance-period.is-past{background:#e8edea;border-color:#e8edea;color:#98a69f;opacity:.65}
+.chance-period.is-past .chance-period-icon{filter:grayscale(1)}
+.chance-period.is-now{border:2px solid #377e65;background:#dff1e4;color:#225f43}
+.chance-footer{font-size:12px;color:#68796f;line-height:1.55}
+.practice-test-day{margin:4px 0 0;font-size:12px;color:#64786d}
+@media(max-width:700px){.chance-panel{padding:13px}.chance-day{flex-basis:134px;min-width:134px}.chance-header h2{font-size:17px}}
 </style></head><body><main class="shell">
 <header><div><h1>🌷 Miori's Homework</h1><div class="muted small" id="today"></div></div><div class="toplinks"><button class="button small" id="refreshHomework" type="button" aria-label="宿題一覧を最新に更新">↻ Refresh</button><button class="button small" id="parentLink">For Parents ›</button></div></header>
 <div class="mode" id="modeBanner">🔐 宿題データを確認中…</div>
@@ -77,6 +99,14 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 <div class="small muted" id="syncHint" style="margin-top:7px">共有設定が有効になった後、家族用コードで進捗を更新できます。保護者用コードなら課題の追加・削除も可能です。</div>
 </section>
 <section class="student" id="student" style="display:none">
+<section class="chance-panel" id="chancePanel" aria-label="宿題に向けて残っている時間帯" hidden>
+ <div class="chance-header">
+  <div><h2 id="chanceHeading">月曜日までのじかん</h2><div class="chance-meta" id="chanceMeta"></div></div>
+  <div class="chance-count" id="chanceCount" aria-live="polite"></div>
+ </div>
+ <div class="chance-days" id="chanceDays"></div>
+ <div class="chance-footer">朝・昼・夜は宿題の回数ではないよ。学校やお出かけの時間もあるから、何をいつやるかは自分で決めてね。</div>
+</section>
 <div class="progress"><div style="display:flex;justify-content:space-between;gap:8px"><strong>今日の進みぐあい</strong><span class="muted" id="progressText"></span></div><div class="track"><div class="fill" id="progressFill" style="width:0%"></div></div>
 <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:15px">
   <div>
@@ -434,25 +464,82 @@ const today=new Date();el('today').textContent=new Intl.DateTimeFormat('ja-JP',{
 
 const tokyoToday=()=>new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
 const dayIndex=date=>/^\d{4}-\d{2}-\d{2}$/.test(date||'')?Date.parse(date+'T00:00:00Z')/86400000:NaN;
+
+const addIsoDays=(iso,delta)=>{
+ const index=dayIndex(iso);
+ return Number.isFinite(index)?new Date((index+delta)*86400000).toISOString().slice(0,10):'';
+};
+const tokyoHour=()=>{
+ const hour=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Tokyo',hour:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).find(p=>p.type==='hour');
+ return Number(hour?.value??0);
+};
+// 6:00-11:59=朝、12:00-17:59=昼、18:00以降=夜。夜中は翌朝を「今」とは表示しない。
+const currentPeriod=()=>{const h=tokyoHour();return h<6?-1:h<12?0:h<18?1:2;};
+const dayOfWeek=iso=>new Date(dayIndex(iso)*86400000).getUTCDay();
+const dateShort=iso=>{const d=dayIndex(iso);return Number.isFinite(d)?Number(iso.slice(5,7))+'/'+Number(iso.slice(8,10))+'（'+'日月火水木金土'[dayOfWeek(iso)]+'）':'日付未設定';};
+function renderChanceTimeline(active,todayIso){
+ const panel=el('chancePanel');
+ // 読書のような日課・日付不明課題は、存在しない期限として扱わない。
+ const dated=active.filter(t=>t.kind!=='reading'&&Number.isFinite(dayIndex(t.dueDate))&&dayIndex(t.dueDate)>=dayIndex(todayIso));
+ if(!dated.length){panel.hidden=true;return;}
+ const closest=Math.min(...dated.map(t=>dayIndex(t.dueDate)));
+ const dueIso=new Date(closest*86400000).toISOString().slice(0,10);
+ const group=dated.filter(t=>t.dueDate===dueIso);
+ const goalIso=addIsoDays(dueIso,-1);
+ const pastGoal=dayIndex(goalIso)<dayIndex(todayIso);
+ const lastDay=pastGoal?todayIso:goalIso;
+ const hasPractice=group.some(t=>t.kind==='practice');
+ const allEstimated=group.every(t=>t.dueType==='estimated');
+ const period=currentPeriod();
+ const periods=[['🌅','朝'],['☀️','昼'],['🌙','夜']];
+ const distance=dayIndex(lastDay)-dayIndex(todayIso);
+ // 先の期間は横スクロール。日付が異常に遠い場合は最大14日だけ表示する。
+ const shownDays=Math.min(14,Math.max(1,distance+1));
+ let future=0,markup='';
+ for(let i=0;i<shownDays;i++){
+  const iso=addIsoDays(todayIso,i);
+  const today=i===0;
+  let cells='';
+  for(let p=0;p<3;p++){
+   const past=today&&p<period;
+   const now=today&&p===period;
+   if(!past)future++;
+   const klass=past?'is-past':now?'is-now':'is-next';
+   const status=past?'すぎた':now?'いま':'これから';
+   cells+='<div class="chance-period '+klass+'" aria-label="'+esc(dateShort(iso)+' '+periods[p][1]+' '+status)+'"><span class="chance-period-icon" aria-hidden="true">'+periods[p][0]+'</span><span class="chance-period-label">'+periods[p][1]+'</span></div>';
+  }
+  markup+='<div class="chance-day'+(today?' is-today':'')+'"><div class="chance-day-label">'+(today?'きょう · ':'')+esc(dateShort(iso))+'</div><div class="chance-periods">'+cells+'</div></div>';
+ }
+ el('chanceDays').innerHTML=markup;
+ el('chanceHeading').textContent=pastGoal?'準備の目安は過ぎたよ':'ゴールまでのじかん';
+ el('chanceCount').textContent=(distance+1>14?'まず':'のこり')+' '+future+'この時間帯';
+ const dateText=dateShort(dueIso);
+ const status=allEstimated?'家庭の仮の目安':'学校の期限など';
+ el('chanceMeta').textContent=pastGoal
+   ?dateText+'が予定日 · 前夜までの準備期間は終了（'+status+'）'
+   :dateShort(goalIso)+' の夜まで · '+dateText+'に向けて（'+status+'）'+(hasPractice?' · テスト練習も含む':'');
+ panel.hidden=false;
+}
 function practiceCard(t){
  const node=document.createElement('article');
  node.className='card';
  const counts=getPracticeCounts(t);
  const days=Object.keys(counts).filter(d=>Number.isFinite(dayIndex(d))).sort();
  const todayIso=tokyoToday();
- const begin=dayIndex(t.startDate),end=dayIndex(t.dueDate),now=dayIndex(todayIso);
- const valid=Number.isFinite(begin)&&Number.isFinite(end)&&end>begin;
- const total=valid?end-begin:1;
- const walked=valid?Math.min(total,Math.max(0,now-begin)):0;
- const progress=walked/total*100;
+ // 学校でのテスト日と家庭で練習できる最後の日を区別する。
+ const goalIso=addIsoDays(t.dueDate,-1);
+ const begin=dayIndex(t.startDate),end=dayIndex(goalIso),now=dayIndex(todayIso);
+ const valid=Number.isFinite(begin)&&Number.isFinite(end)&&end>=begin;
+ const slots=valid?(end-begin+1)*3:1;
+ const position=valid?Math.max(0,Math.min(slots,(now-begin)*3+currentPeriod()+1)):0;
+ const progress=position/slots*100;
  const prints=days.filter(d=>valid&&dayIndex(d)>=begin&&dayIndex(d)<=end).map(d=>{
-  const where=(dayIndex(d)-begin)/total*100;
+  const where=((dayIndex(d)-begin)*3+1.5)/slots*100;
   return '<span class="practice-foot" style="left:'+where+'%" aria-hidden="true">👣'+
     (counts[d]>1?'<span class="practice-count">×'+counts[d]+'</span>':'')+'</span>';
  }).join('');
- const remaining=Number.isFinite(end)?Math.ceil(end-now):null;
- const distance=remaining===null?'日付を確認中':remaining<0?'テスト終了':remaining===0?'今日がテスト！':'あと'+remaining+'日';
- const dateLabel=typeof t.dueDate==='string'?t.dueDate.slice(5).replace('-','/'):'日付未設定';
+ const remaining=Number.isFinite(end)?end-now:null;
+ const distance=remaining===null?'日付を確認中':remaining<0?'練習期間終了':remaining===0?'今日の夜がゴール':'あと'+remaining+'日で練習のゴール';
  const estimate=t.dueType==='estimated'?'（目安）':'';
  const currentCount=counts[todayIso]||0;
  const confirmedCount=getPracticeCounts(privateState?.tasks?.find(item=>item.id===t.id))[todayIso]||0;
@@ -460,12 +547,13 @@ function practiceCard(t){
  node.innerHTML='<div class="card-title"><span>'+esc(t.title)+'</span><span class="tag">テストの準備</span></div>'+
   '<div class="detail">'+esc(t.detail||'紙でもアプリでもOK')+'</div>'+
   '<div class="practice-route">'+
-   '<div class="practice-meta"><span>いま ●</span><strong>🏁 '+esc(dateLabel)+esc(estimate)+'　'+esc(distance)+'</strong></div>'+
-   (valid?'<div class="practice-rail" role="img" aria-label="テストまで'+esc(distance)+'。練習した日'+days.length+'日、合計'+totalCount+'回">'+
+   '<div class="practice-meta"><span>いま ●</span><strong>🏁 練習は '+esc(dateShort(goalIso))+ ' 夜まで'+esc(estimate)+'</strong></div>'+
+   '<div class="practice-test-day">本番予定：'+esc(dateShort(t.dueDate))+esc(estimate)+' · '+esc(distance)+'</div>'+
+   (valid?'<div class="practice-rail" role="img" aria-label="練習のゴールまで'+esc(distance)+'。練習した日'+days.length+'日、合計'+totalCount+'回">'+
     '<div class="practice-past" style="width:'+progress+'%"></div>'+
     '<span class="practice-position" style="left:'+progress+'%"></span>'+
     '<span class="practice-flag" aria-hidden="true">⚑</span>'+prints+'</div>':
-    '<p class="small muted">テストの日付を登録すると、ここにゴールまでの道が表示されます。</p>')+
+    '<p class="small muted">練習の日付が決まると、ここにゴールまでの道が表示されます。</p>')+
    '<div class="practice-bottom"><span class="muted small">👣 '+days.length+'日・合計'+totalCount+'回</span>'+
     '<div class="practice-controls"><button type="button" class="button" data-action="practice-minus" aria-label="今日の練習を1回減らす"'+
     (readOnlyDevice||currentCount<=confirmedCount?' disabled':'')+'>−</button>'+
@@ -583,6 +671,7 @@ function render(){['english','other','doneTasks','oldTasks','parentList'].forEac
 const nowIso=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
 const effectiveBucket=t=>t.bucket==='old'||(t.dueDate&&t.dueDate<nowIso)?'old':t.bucket;
 const active=tasks.filter(t=>effectiveBucket(t)!=='old'&&!complete(t));const finished=tasks.filter(t=>complete(t));const old=tasks.filter(t=>effectiveBucket(t)==='old'&&!complete(t));
+renderChanceTimeline(active,nowIso);
 for(const subject of ['english','other']){const dest=el(subject);const here=active.filter(t=>t.subject===subject);here.sort((a,b)=>(a.kind==='practice'?-1:a.bucket==='today'?0:1)-(b.kind==='practice'?-1:b.bucket==='today'?0:1));if(!here.length)dest.innerHTML='<p class="muted small">今の宿題は全部できたね！</p>';for(const t of here){if(t.bucket==='future'&&!dest.querySelector('.subgroup')){const p=document.createElement('div');p.className='subgroup';p.textContent='少しずつ進める';dest.append(p)}dest.append(card(t));}}
 finished.forEach(t=>el('doneTasks').append(card(t)));old.forEach(t=>el('oldTasks').append(card(t)));
 el('doneCount').textContent=finished.length?'('+finished.length+')':'';el('oldCount').textContent=old.length?'('+old.length+')':'';
