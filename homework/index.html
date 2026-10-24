@@ -520,7 +520,7 @@ function renderChanceTimeline(active,todayIso){
  }
  el('chanceDays').innerHTML=markup;
  el('chanceHeading').textContent=pastGoal?'準備の目安は過ぎたよ':'ゴールまでのじかん';
- el('chanceCount').textContent=(distance+1>14?'まず':'のこり')+' '+future+'この時間帯';
+ el('chanceCount').textContent=(distance+1>14?'まず':'あと')+future+'つの時間帯';
  const dateText=dateShort(dueIso);
  const status=allEstimated?'家庭の仮の目安':'学校の期限など';
  el('chanceMeta').textContent=pastGoal
