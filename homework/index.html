@@ -490,6 +490,14 @@ function renderChanceTimeline(active,todayIso){
  const lastDay=pastGoal?todayIso:goalIso;
  const hasPractice=group.some(t=>t.kind==='practice');
  const allEstimated=group.every(t=>t.dueType==='estimated');
+ if(pastGoal){
+  el('chanceHeading').textContent='今日は予定日';
+  el('chanceCount').textContent='準備の目安は昨日まで';
+  el('chanceMeta').textContent=dateShort(dueIso)+' が予定日（'+(allEstimated?'家庭の仮の目安':'学校の期限など')+'）';
+  el('chanceDays').replaceChildren();
+  panel.hidden=false;
+  return;
+ }
  const period=currentPeriod();
  const periods=[['🌅','朝'],['☀️','昼'],['🌙','夜']];
  const distance=dayIndex(lastDay)-dayIndex(todayIso);
@@ -667,8 +675,10 @@ function act(id,action,checked,selected){
  else return;
  persist(t);
 }
+let lastVisualStamp='';
 function render(){['english','other','doneTasks','oldTasks','parentList'].forEach(id=>el(id).replaceChildren());
 const nowIso=new Date().toLocaleDateString('sv-SE',{timeZone:'Asia/Tokyo'});
+lastVisualStamp=nowIso+'-'+currentPeriod();
 const effectiveBucket=t=>t.bucket==='old'||(t.dueDate&&t.dueDate<nowIso)?'old':t.bucket;
 const active=tasks.filter(t=>effectiveBucket(t)!=='old'&&!complete(t));const finished=tasks.filter(t=>complete(t));const old=tasks.filter(t=>effectiveBucket(t)==='old'&&!complete(t));
 renderChanceTimeline(active,nowIso);
@@ -795,6 +805,12 @@ window.addEventListener('pageshow',event=>{
  if(event.persisted&&privateBoard)loadPrivateBoard();
 });
 setInterval(refresh,45000);
+// iPadで開きっぱなしでも朝→昼→夜の境界を表示更新。端末内のチェックは触らない。
+setInterval(()=>{
+ if(document.hidden||!privateBoard)return;
+ const nowStamp=tokyoToday()+'-'+currentPeriod();
+ if(nowStamp!==lastVisualStamp)render();
+},60000);
 // 初回表示は本物のPBデータ取得まで隠す。キャッシュされた例題をチラ見せしない。
 loadPrivateBoard();
 })();
