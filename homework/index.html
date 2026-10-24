@@ -95,10 +95,13 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 .planner-subject.is-other{background:#fbf6ed;border-color:#eee4d4}
 .planner-subject-head{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:7px;min-height:28px}
 .planner-subject-head strong{font-size:14px;letter-spacing:-.02em}
-.planner-subject-nav{display:flex;gap:4px;align-items:center;color:#788579;font-size:11px}
-.planner-subject-nav button,.planner-days-nav button{border:1px solid #dbe6dc;background:#fff;border-radius:8px;min-width:32px;min-height:30px;color:#516d5b}
-.planner-subject-nav button:disabled,.planner-days-nav button:disabled{opacity:.28}
-.planner-cards{display:grid;min-width:0;grid-template-rows:repeat(3,minmax(0,1fr));gap:6px;min-height:0;flex:1}
+.planner-subject-scrollhint{color:#778b7a;font-size:11px;font-weight:650;flex:none}
+.planner-days-nav button{border:1px solid #dbe6dc;background:#fff;border-radius:8px;min-width:32px;min-height:30px;color:#516d5b}
+.planner-days-nav button:disabled{opacity:.28}
+.planner-cards{display:flex;flex-direction:column;min-width:0;min-height:0;flex:1;gap:6px;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:1px 3px 3px 1px;scrollbar-width:thin;scrollbar-color:#bacfc1 transparent}
+.planner-cards>div{flex:0 0 56px;min-height:56px;min-width:0}
+.planner-cards::-webkit-scrollbar{width:5px}
+.planner-cards::-webkit-scrollbar-thumb{background:#bacfc1;border-radius:8px}
 .planner-card{width:100%;min-width:0;flex:1;min-height:0;display:flex;gap:9px;align-items:center;text-align:left;background:#fff;border:1px solid #e2e9e4;border-radius:12px;padding:7px 9px;box-shadow:0 2px 4px #17352509;color:#354941;transition:border-color .15s,background .15s;overflow:hidden}
 .planner-card.is-selected{border:2px solid #368267;background:#e8f5ec}
 .planner-card-icon{flex:none;width:30px;height:30px;border-radius:9px;background:#edf6ec;display:grid;place-items:center;font-size:18px}
@@ -178,8 +181,8 @@ body.meate-active .shell>footer{display:none}
  <div class="planner-heading"><h2>わたしのめあて</h2><span class="planner-message" id="plannerSelection">カードをえらんで、時間においてみよう</span></div>
  <div class="planner-layout">
   <aside class="planner-palette" aria-label="宿題カード">
-   <section class="planner-subject" id="plannerEnglish"><div class="planner-subject-head"><strong>🔤 English <span id="plannerEnglishCount"></span></strong><div class="planner-subject-nav"><button type="button" id="englishPrev" aria-label="英語の前のカード">‹</button><span id="englishPage">1/1</span><button type="button" id="englishNext" aria-label="英語の次のカード">›</button></div></div><div class="planner-cards" id="englishCards"></div></section>
-   <section class="planner-subject is-other" id="plannerOther"><div class="planner-subject-head"><strong>📚 それいがい <span id="plannerOtherCount"></span></strong><div class="planner-subject-nav"><button type="button" id="otherPrev" aria-label="それ以外の前のカード">‹</button><span id="otherPage">1/1</span><button type="button" id="otherNext" aria-label="それ以外の次のカード">›</button></div></div><div class="planner-cards" id="otherCards"></div></section>
+   <section class="planner-subject" id="plannerEnglish"><div class="planner-subject-head"><strong>🔤 English <span id="plannerEnglishCount"></span></strong><span class="planner-subject-scrollhint" id="englishScrollHint" aria-hidden="true"></span></div><div class="planner-cards" id="englishCards" role="region" aria-label="英語の宿題カード一覧：指で上下にスクロールできます"></div></section>
+   <section class="planner-subject is-other" id="plannerOther"><div class="planner-subject-head"><strong>📚 それいがい <span id="plannerOtherCount"></span></strong><span class="planner-subject-scrollhint" id="otherScrollHint" aria-hidden="true"></span></div><div class="planner-cards" id="otherCards" role="region" aria-label="英語以外の宿題カード一覧：指で上下にスクロールできます"></div></section>
   </aside>
   <section class="planner-board" aria-label="朝・昼・夜のめあて">
    <div class="planner-board-head"><strong>🗓️ いつやろうかな？</strong><div class="planner-days-nav"><button type="button" id="plannerDayPrev" aria-label="前の日に戻る">‹</button><span id="plannerDayRange"></span><button type="button" id="plannerDayNext" aria-label="次の日を見る">›</button></div></div>
@@ -252,8 +255,7 @@ try{
  }
 }catch(e){meateSlots={};}
 let viewMode='plan',selectedTaskId=null,plannerDayPage=0;
-const plannerTaskPage={english:0,other:0};
-const PLANNER_CARDS_PER_PAGE=3,PLANNER_DAYS_PER_PAGE=3,PLANNER_TOTAL_DAYS=7;
+const PLANNER_DAYS_PER_PAGE=3,PLANNER_TOTAL_DAYS=7;
 function setViewMode(mode){
  viewMode=mode==='work'?'work':'plan';
  el('viewSwitch').hidden=false;
@@ -334,16 +336,15 @@ function renderMeate(){
  el('plannerHint').textContent=readOnlyDevice?'閲覧専用：このiPadではめあての変更はできません。':'めあてはいつでも変えていいよ。配置はこのiPadだけに保存されるよ。';
  for(const subject of ['english','other']){
   const sub=items.filter(t=>t.subject===subject);
-  const total=Math.max(1,Math.ceil(sub.length/PLANNER_CARDS_PER_PAGE));
-  plannerTaskPage[subject]=Math.min(plannerTaskPage[subject],total-1);
-  const i=plannerTaskPage[subject];
   const holder=el(subject==='english'?'englishCards':'otherCards');
+  // カードを選んだ後もスクロール位置を保つ。
+  const previousScroll=holder.scrollTop;
   holder.replaceChildren();
-  sub.slice(i*PLANNER_CARDS_PER_PAGE,(i+1)*PLANNER_CARDS_PER_PAGE).forEach(t=>holder.append(makeMeateCard(t)));
+  sub.forEach(t=>holder.append(makeMeateCard(t)));
   if(!sub.length){const empty=document.createElement('p');empty.className='muted small';empty.textContent='いまの宿題はないよ';holder.append(empty);}
+  holder.scrollTop=previousScroll;
   el(subject==='english'?'plannerEnglishCount':'plannerOtherCount').textContent='('+sub.length+')';
-  el(subject+'Page').textContent=(i+1)+' / '+total;
-  el(subject+'Prev').disabled=i<=0;el(subject+'Next').disabled=i>=total-1;
+  el(subject==='english'?'englishScrollHint':'otherScrollHint').textContent=sub.length>3?'↕ 上下にスワイプ':'';
  }
  plannerDayPage=Math.max(0,Math.min(plannerDayPage,Math.ceil(PLANNER_TOTAL_DAYS/PLANNER_DAYS_PER_PAGE)-1));
  const start=plannerDayPage*PLANNER_DAYS_PER_PAGE;
@@ -1040,10 +1041,6 @@ el('homeScreenSetupForm').addEventListener('submit',async ev=>{
 });
 el('openPlan').addEventListener('click',()=>setViewMode('plan'));
 el('openWork').addEventListener('click',()=>setViewMode('work'));
-el('englishPrev').addEventListener('click',()=>{plannerTaskPage.english--;renderMeate();});
-el('englishNext').addEventListener('click',()=>{plannerTaskPage.english++;renderMeate();});
-el('otherPrev').addEventListener('click',()=>{plannerTaskPage.other--;renderMeate();});
-el('otherNext').addEventListener('click',()=>{plannerTaskPage.other++;renderMeate();});
 el('plannerDayPrev').addEventListener('click',()=>{plannerDayPage--;renderMeate();});
 el('plannerDayNext').addEventListener('click',()=>{plannerDayPage++;renderMeate();});
 el('plannerDialogClose').addEventListener('click',()=>el('plannerDialog').close());
