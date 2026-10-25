@@ -538,7 +538,7 @@ function renderMeate(){
  const selected=items.find(t=>t.id===selectedTaskId);
  el('plannerSelection').textContent=selected?'選んだカード：'+selected.title+' → 右の ＋ をタップ':'左のカードを選び、やりたい時間におこう';
  el('plannerHint').textContent=readOnlyDevice?'閲覧専用：記録の変更はできません。':'めあての予定・チェックはこのiPadだけ。実際にやった記録は「PBへ反映」から送れるよ。';
- const plannedCompleted=tasks.filter(t=>t.kind!=='reading'&&complete(t)&&meateSlotOf(t).length);
+ const plannedCompleted=tasks.filter(t=>t.kind!=='reading'&&complete(t));
  for(const subject of ['english','other']){
   const sub=items.filter(t=>t.subject===subject);
   const done=plannedCompleted.filter(t=>t.subject===subject);
