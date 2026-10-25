@@ -153,6 +153,65 @@ body.meate-active .shell>footer{display:none}
  .planner-card{padding:5px}.planner-grid{gap:4px}.planner-slot{padding:4px}
  .planner-message{display:none}
 }
+
+/* 統合版：左に課題の状態、右にめあての予定と実施。横画面は全体スクロールなし */
+.planner-heading{align-items:center}
+.planner-heading-copy{display:flex;align-items:baseline;gap:13px;min-width:0;flex:1}
+.planner-pb{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+.planner-pb #pbReportTest{white-space:nowrap;min-height:36px!important;padding:7px 12px;font-size:12px}
+.planner-pb #pbReportState{font-size:10px;max-width:210px;line-height:1.25}
+.planner-palette{grid-template-rows:minmax(0,1fr) minmax(0,1fr)}
+.planner-layout{grid-template-columns:minmax(235px,32%) minmax(0,1fr)}
+.planner-board{padding:9px}
+.planner-cards>div{flex:0 0 56px;min-height:56px}
+.planner-card-row{display:flex;gap:4px;min-width:0;align-items:stretch;touch-action:pan-y;position:relative}
+.planner-card-row .planner-card{flex:1;min-width:0}
+.planner-card-row .planner-more{flex:none;min-height:44px;width:31px;padding:2px;border:1px solid #dfe7e0;border-radius:10px;background:#fff;color:#6a8172;font-size:17px}
+.planner-card-row .planner-done-action{display:none;min-width:74px;font-size:12px;font-weight:750;padding:5px 7px;border:1px solid #86b79b;color:#2b704b;background:#e5f3e7;border-radius:10px}
+.planner-card-row.is-revealed .planner-done-action{display:block}
+.planner-card-row.is-revealed .planner-more{display:none}
+.planner-card-row .planner-card-icon{flex:none}
+.planner-card-metrics{font-size:11px;color:#3d7b58;background:#e6f4e8;padding:3px 5px;border-radius:7px;white-space:nowrap;flex:none}
+.planner-card-row.is-done .planner-card{opacity:.65}
+.planner-completed-toggle{width:100%;margin-top:5px;flex:none;border:1px solid #dfe5dd;border-radius:8px;background:#fff;color:#47735b;font-size:11px;padding:6px}
+.planner-grid{grid-template-columns:repeat(var(--planner-days,2),minmax(0,1fr))}
+.planner-slot{gap:4px;padding:5px}
+.planner-slot-label{font-size:12px;min-height:15px}
+.planner-slot-chips{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-template-rows:repeat(2,minmax(0,1fr));gap:4px;flex:1;min-height:0}
+.planner-mini{display:flex;flex-direction:column;justify-content:space-between;gap:2px;min-width:0;min-height:0;border:1px solid #cbded3;border-radius:9px;background:#e7f1e9;padding:4px 5px;color:#385946}
+.planner-mini.is-other{background:#f8ebd8;border-color:#e9d9c2;color:#71593c}
+.planner-mini.is-done{background:#e3eee3;border-color:#9ec5a8}
+.planner-mini-top{display:flex;gap:3px;align-items:center;min-height:0;flex:1;min-width:0}
+.planner-mini-label{font-size:11px;line-height:1.22;min-width:0;flex:1;overflow:hidden;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;line-clamp:2;overflow-wrap:anywhere}
+.planner-mini-remove{font-size:14px;background:transparent;border:0;color:#83968a;padding:0 2px;flex:none;min-width:19px}
+.planner-mini-controls{display:flex;justify-content:space-between;gap:3px;align-items:center;min-height:26px}
+.planner-mini-controls button{font-size:11px;font-weight:750;border:1px solid #a8c6b0;background:#fff;border-radius:7px;color:#36694e;min-width:27px;min-height:27px;padding:3px}
+.planner-mini-controls .planner-check{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.planner-mini-controls button:disabled{opacity:.35}
+.planner-mini-number{font-size:11px;font-weight:750;white-space:nowrap;text-align:center;flex:1}
+.planner-slot-add{flex:none;min-height:24px;font-size:10px;padding:2px;margin:0}
+.planner-slot-add:disabled{min-height:24px}
+.planner-dialog{max-height:min(88dvh,720px);overflow-y:auto}
+.planner-dialog #plannerDialogExtras .card{margin-bottom:0}
+body.meate-active .shell{padding-top:7px;padding-bottom:4px}
+body.meate-active .shell>header{margin-bottom:3px}
+body.meate-active .mode{padding:3px 8px;margin-bottom:4px;font-size:10px}
+@media(min-width:701px) and (max-height:650px){
+ .planner-heading h2{font-size:19px}
+ .planner-pb #pbReportState{max-width:140px;font-size:9px}
+ .planner-card-icon{width:25px;height:25px}
+ .planner-mini{padding:2px 4px;gap:0}
+ .planner-mini-label{font-size:10px}
+ .planner-mini-controls button{min-height:22px;min-width:24px}
+ .planner-mini-controls{min-height:22px}
+ .planner-slot{padding:3px}
+ .planner-slot-add{min-height:20px}
+}
+@media(max-width:700px) or (orientation:portrait){
+ .planner-heading-copy{flex-direction:column;gap:0}
+ .planner-pb #pbReportState{display:none}
+ .planner-layout{grid-template-columns:minmax(150px,34%) minmax(0,1fr)}
+}
 </style></head><body><main class="shell">
 <header><div><h1>🌷 Miori's Homework</h1><div class="muted small" id="today"></div></div><div class="toplinks"><button class="button small" id="refreshHomework" type="button" aria-label="宿題一覧を最新に更新">↻ Refresh</button><button class="button small" id="parentLink">For Parents ›</button></div></header>
 <div class="mode" id="modeBanner">🔐 宿題データを確認中…</div>
@@ -173,12 +232,12 @@ body.meate-active .shell>footer{display:none}
 <div class="small muted" id="syncHint" style="margin-top:7px">共有設定が有効になった後、家族用コードで進捗を更新できます。保護者用コードなら課題の追加・削除も可能です。</div>
 </section>
 <section class="student" id="student" style="display:none">
-<div class="view-switch" id="viewSwitch" hidden>
+<div class="view-switch" id="viewSwitch" hidden style="display:none!important">
  <button type="button" class="button is-active" id="openPlan" aria-pressed="true">🌷 めあてをつくる</button>
  <button type="button" class="button" id="openWork" aria-pressed="false">✏️ 宿題をする</button>
 </div>
 <section class="planner-view" id="plannerView" aria-label="めあてをつくる" hidden>
- <div class="planner-heading"><h2>わたしのめあて</h2><span class="planner-message" id="plannerSelection">カードをえらんで、時間においてみよう</span></div>
+ <div class="planner-heading"><div class="planner-heading-copy"><h2>わたしのめあて</h2><span class="planner-message" id="plannerSelection">カードをえらんで、時間においてみよう</span></div><div class="planner-pb" id="plannerPb"></div></div>
  <div class="planner-layout">
   <aside class="planner-palette" aria-label="宿題カード">
    <section class="planner-subject" id="plannerEnglish"><div class="planner-subject-head"><strong>🔤 English <span id="plannerEnglishCount"></span></strong><span class="planner-subject-scrollhint" id="englishScrollHint" aria-hidden="true"></span></div><div class="planner-cards" id="englishCards" role="region" aria-label="英語の宿題カード一覧：指で上下にスクロールできます"></div></section>
@@ -189,7 +248,7 @@ body.meate-active .shell>footer{display:none}
    <div class="planner-grid" id="plannerGrid"></div>
   </section>
  </div>
- <div class="planner-hint" id="plannerHint">めあてはいつでも変えていいよ。配置はこのiPadだけに保存されるよ。</div>
+ <div class="planner-hint" id="plannerHint">めあてはこのiPadだけ。勉強した記録は「PBへ反映」で家族と共有できるよ。</div>
 </section>
 <div class="work-view" id="workView" hidden>
 <section class="chance-panel" id="chancePanel" aria-label="宿題に向けて残っている時間帯" hidden>
@@ -225,7 +284,7 @@ body.meate-active .shell>footer{display:none}
 <details class="fold"><summary>前の宿題を見る <span id="oldCount"></span></summary><div id="oldTasks" class="fold-content"></div></details>
 </div>
 </section>
-<dialog class="planner-dialog" id="plannerDialog" aria-labelledby="plannerDialogTitle"><h2 id="plannerDialogTitle"></h2><p class="muted" id="plannerDialogDetail"></p><div class="planner-dialog-actions"><button type="button" class="button" id="plannerDialogClose">とじる</button><button type="button" class="button primary" id="plannerDialogWork">宿題をする ›</button></div></dialog>
+<dialog class="planner-dialog" id="plannerDialog" aria-labelledby="plannerDialogTitle"><h2 id="plannerDialogTitle"></h2><p class="muted" id="plannerDialogDetail"></p><div id="plannerDialogExtras"></div><div class="planner-dialog-actions"><button type="button" class="button" id="plannerDialogClose">とじる</button></div></dialog>
 <section class="parent" id="parent"><button class="button" id="back">‹ 美織の画面へ戻る</button><h2 style="margin-top:22px">Parent page（試作）</h2>
 <div class="notice" id="parentNotice">試作モードです。学校PDF・写真の自動取り込みは未接続です。実際の学校情報はまだ入力しないでください。</div>
 <div class="parent-panel"><h2>宿題を追加して表示テスト</h2><form id="addForm" class="formgrid">
@@ -243,34 +302,58 @@ body.meate-active .shell>footer{display:none}
 </main><script>
 (()=>{'use strict';
 
-// めあては進捗と別。PBへの同期対象ではなく、このiPadにだけ保存する。
+// めあて（予定・枠ごとの達成）はこのiPadだけ。PB送信は実際の宿題進捗のみ。
 const MEATE_KEY='miori-homework-meate-slots-v1';
-let meateSlots={};
-try{
- const saved=JSON.parse(localStorage.getItem(MEATE_KEY)||'{}');
- if(saved&&typeof saved==='object'&&!Array.isArray(saved)){
-  for(const [id,slots] of Object.entries(saved).slice(0,150)){
-   if(typeof id==='string'&&id.length<=100&&Array.isArray(slots))meateSlots[id]=[...new Set(slots.filter(slot=>typeof slot==='string'&&/^\d{4}-\d{2}-\d{2}:[012]$/.test(slot)))].slice(0,18);
-  }
+const MEATE_MARKS_KEY='miori-homework-meate-marks-v1';
+let meateSlots={},meateMarks={};
+function readMeateObject(key){
+ try{
+  const stored=JSON.parse(localStorage.getItem(key)||'{}');
+  return stored&&typeof stored==='object'&&!Array.isArray(stored)?stored:{};
+ }catch(e){return {};}
+}
+for(const [id,slots] of Object.entries(readMeateObject(MEATE_KEY)).slice(0,150)){
+ if(id.length>100||!Array.isArray(slots))continue;
+ meateSlots[id]=[...new Set(slots.filter(slot=>typeof slot==='string'&&/^\d{4}-\d{2}-\d{2}:[012]$/.test(slot)))].slice(0,30);
+}
+for(const [id,records] of Object.entries(readMeateObject(MEATE_MARKS_KEY)).slice(0,150)){
+ if(id.length>100||!records||typeof records!=='object'||Array.isArray(records))continue;
+ const result={};
+ for(const [slot,v] of Object.entries(records).slice(0,70)){
+  if(!/^\d{4}-\d{2}-\d{2}:[012]$/.test(slot)||!v||typeof v!=='object')continue;
+  result[slot]={done:v.done===true,units:Number.isInteger(v.units)?Math.max(0,Math.min(v.units,99)):0};
  }
-}catch(e){meateSlots={};}
-let viewMode='plan',selectedTaskId=null,plannerDayPage=0;
-const PLANNER_DAYS_PER_PAGE=3,PLANNER_TOTAL_DAYS=7;
-function setViewMode(mode){
- viewMode=mode==='work'?'work':'plan';
- el('viewSwitch').hidden=false;
- el('plannerView').hidden=viewMode!=='plan';
- el('workView').hidden=viewMode!=='work';
- for(const [name,button] of [['plan',el('openPlan')],['work',el('openWork')]]){
-  button.classList.toggle('is-active',viewMode===name);
-  button.setAttribute('aria-pressed',String(viewMode===name));
+ meateMarks[id]=result;
+}
+let viewMode='plan',selectedTaskId=null,plannerDayPage=0,meateCompletedExpanded=false,meateReveal=null,dialogTaskId=null;
+const PLANNER_DAYS_PER_PAGE=2,PLANNER_TOTAL_DAYS=8,PLANNER_SLOT_MAX=4;
+function setViewMode(){
+ viewMode='plan';el('viewSwitch').hidden=true;
+ el('plannerView').hidden=false;el('workView').hidden=true;
+ document.body.classList.add('meate-active');
+ const pb=el('plannerPb');
+ if(el('pbReportTest').parentElement!==pb){
+  pb.append(el('pbReportState'),el('pbReportTest'));
  }
- document.body.classList.toggle('meate-active',viewMode==='plan');
- if(viewMode==='plan')renderMeate();
+ renderMeate();
 }
 function saveMeate(){
- try{localStorage.setItem(MEATE_KEY,JSON.stringify(meateSlots));return true}
- catch(e){el('plannerHint').textContent='この端末にめあてを保存できません。ストレージの空きや設定を確認してください。';return false}
+ try{
+  localStorage.setItem(MEATE_KEY,JSON.stringify(meateSlots));
+  localStorage.setItem(MEATE_MARKS_KEY,JSON.stringify(meateMarks));
+  return true;
+ }catch(e){
+  el('plannerHint').textContent='⚠ めあての端末保存に失敗。空き容量・設定を確認してください。';
+  return false;
+ }
+}
+function meateSlotOf(t){return meateSlots[t.id]||[]}
+function meateRecord(t,slot){return meateMarks[t.id]?.[slot]||{done:false,units:0}}
+function markMeate(t,slot,done,delta=0){
+ if(readOnlyDevice)return;
+ const before=meateRecord(t,slot);
+ meateMarks[t.id]={...(meateMarks[t.id]||{}),[slot]:{done,units:Math.max(0,Math.min(99,before.units+delta))}};
+ if(saveMeate())renderMeate();
 }
 function eligibleForMeate(t,iso){
  if(complete(t))return false;
@@ -281,118 +364,222 @@ function meateItems(){
  const iso=tokyoToday();
  return tasks.filter(t=>eligibleForMeate(t,iso));
 }
-function meateSlotOf(t){return meateSlots[t.id]||[]}
 function meateDateLimit(t){return Number.isFinite(dayIndex(t.dueDate))?addIsoDays(t.dueDate,-1):null}
 function assignMeate(id,slot){
  if(readOnlyDevice)return;
- const t=tasks.find(x=>x.id===id);if(!t||!eligibleForMeate(t,tokyoToday()))return;
+ const t=tasks.find(x=>x.id===id);
+ if(!t||!eligibleForMeate(t,tokyoToday()))return;
  const match=/^(\d{4}-\d{2}-\d{2}):([012])$/.exec(slot);
  if(!match||dayIndex(match[1])<dayIndex(tokyoToday()))return;
+ const stored=meateSlotOf(t);
+ if(stored.includes(slot)){removeMeate(id,slot);return;}
  const limit=meateDateLimit(t);
  if(limit&&dayIndex(limit)>=dayIndex(tokyoToday())&&dayIndex(match[1])>dayIndex(limit)){
-  el('plannerSelection').textContent='この宿題のめやすは '+dateShort(limit)+' までだよ';
-  return;
+  el('plannerSelection').textContent='この宿題のめやすは '+dateShort(limit)+' までだよ';return;
  }
- const stored=meateSlotOf(t),has=stored.includes(slot);
- if(has)meateSlots[id]=stored.filter(x=>x!==slot);
- else if(t.kind==='practice'||t.kind==='reading')meateSlots[id]=[...stored,slot].slice(-18);
- else meateSlots[id]=[slot]; // ふつうの宿題は置き直す。練習・読書は複数回。
- if(!saveMeate())return;
- renderMeate();
+ const amount=tasks.filter(task=>meateSlotOf(task).includes(slot)).length;
+ if(amount>=PLANNER_SLOT_MAX){el('plannerSelection').textContent='この時間は4つあるよ。ほかの時間に置いてみよう';return;}
+ // Journalを含むすべての課題は複数の時間帯に配置できる。
+ meateSlots[id]=[...stored,slot].slice(-30);
+ if(saveMeate())renderMeate();
 }
 function removeMeate(id,slot){
  if(readOnlyDevice)return;
  meateSlots[id]=meateSlotOf({id}).filter(x=>x!==slot);
+ if(meateMarks[id])delete meateMarks[id][slot];
  if(saveMeate())renderMeate();
 }
+function totalOf(t){
+ if(t.kind==='practice')return Object.values(getPracticeCounts(t)).reduce((n,c)=>n+c,0);
+ if(t.kind==='reading')return readingInfo(t,tokyoToday()).pages;
+ if(t.kind==='count'||t.kind==='pages')return Number(t.count||0);
+ return null;
+}
+function meateMetric(t){
+ const n=totalOf(t);
+ if(t.kind==='practice')return n+'回';
+ if(t.kind==='reading')return n+'ページ';
+ if(t.kind==='count')return n+'/'+(t.target||1)+'回';
+ if(t.kind==='pages')return n+'/'+(t.target||1)+'p';
+ return '';
+}
 function openMeateDetail(t){
- const dialog=el('plannerDialog');
+ dialogTaskId=t.id;
  el('plannerDialogTitle').textContent=t.title;
- const limit=meateDateLimit(t);
- const dateNote=t.dueDate?('\n目安：'+dateShort(limit||t.dueDate)+(t.dueType==='estimated'?'（家庭の仮目安）':'')):'';
- el('plannerDialogDetail').textContent=(t.detail||'詳細なし')+dateNote;
- dialog.showModal();
+ el('plannerDialogDetail').textContent=(t.detail||'')+(t.dueDate?'\n予定：'+dateShort(t.dueDate)+(t.dueType==='estimated'?'（家庭の仮目安）':''):'');
+ el('plannerDialogExtras').replaceChildren(card(t));
+ el('plannerDialog').showModal();
+}
+function meateActionLabel(t){
+ if(t.kind==='practice'||t.kind==='reading')return '練習・読書を記録';
+ if(t.kind==='count'||t.kind==='pages')return Number(t.count||0)>=Number(t.target||1)?'✓ 全部Done':'回数・進み具合';
+ if(t.kind==='steps')return '進み具合を見る';
+ return '✓ 全部Done';
+}
+function finishFromLeft(t){
+ if(readOnlyDevice)return;
+ if(t.kind==='check')act(t.id,'done',true);
+ else if((t.kind==='count'||t.kind==='pages')&&Number(t.count||0)>=Number(t.target||1)&&!t.done)act(t.id,'finaldone');
+ else openMeateDetail(t);
+ meateReveal=null;
 }
 function makeMeateCard(t){
- const item=document.createElement('div');
- const button=document.createElement('button');button.type='button';button.className='planner-card'+(selectedTaskId===t.id?' is-selected':'');
+ const row=document.createElement('div');
+ row.className='planner-card-row'+(meateReveal===t.id?' is-revealed':'');
+ const button=document.createElement('button');button.type='button';
+ button.className='planner-card'+(selectedTaskId===t.id?' is-selected':'');
  button.title=t.title;button.setAttribute('aria-pressed',String(selectedTaskId===t.id));
- const emoji=t.kind==='reading'?'📖':t.kind==='practice'?'👣':t.subject==='english'?'🔤':/算数/.test(t.title)?'🔢':/社会/.test(t.title)?'🌎':'✏️';
- const n=meateSlotOf(t).filter(slot=>dayIndex(slot.split(':')[0])>=dayIndex(tokyoToday())).length;
- button.innerHTML='<span class="planner-card-icon" aria-hidden="true">'+emoji+'</span><span class="planner-card-title">'+esc(t.title)+'</span>'+(n?'<span class="planner-card-count">'+n+'枠</span>':'');
- button.addEventListener('click',()=>{selectedTaskId=selectedTaskId===t.id?null:t.id;renderMeate();});
- item.style.display='flex';item.style.gap='4px';item.style.minHeight='0';
- const info=document.createElement('button');info.type='button';info.className='button';info.textContent='ⓘ';info.title=t.title+'の説明';info.setAttribute('aria-label',t.title+'の詳細を確認');info.style.cssText='flex:none;min-width:32px;padding:4px;font-size:16px;border-radius:10px;';
- info.addEventListener('click',()=>openMeateDetail(t));
- item.append(button,info);
- return item;
+ const emoji=t.kind==='reading'?'📖':t.kind==='practice'?'👣':t.subject==='english'?'🔤':/算数/.test(t.title)?'🔢':'✏️';
+ const count=meateSlotOf(t).filter(slot=>dayIndex(slot.split(':')[0])>=dayIndex(tokyoToday())).length;
+ const metric=meateMetric(t);
+ button.innerHTML='<span class="planner-card-icon" aria-hidden="true">'+emoji+'</span><span class="planner-card-title">'+esc(t.title)+'</span>'+(metric?'<span class="planner-card-metrics">'+esc(metric)+'</span>':count?'<span class="planner-card-count">'+count+'枠</span>':'');
+ button.addEventListener('click',()=>{selectedTaskId=selectedTaskId===t.id?null:t.id;meateReveal=null;renderMeate();});
+ const more=document.createElement('button');more.type='button';more.className='planner-more';
+ more.textContent='⋯';more.title=t.title+'の操作';
+ more.setAttribute('aria-label',t.title+'の操作を開く');
+ more.addEventListener('click',()=>{meateReveal=meateReveal===t.id?null:t.id;renderMeate();});
+ const done=document.createElement('button');done.type='button';done.className='planner-done-action';
+ done.textContent=meateActionLabel(t);done.setAttribute('aria-label',t.title+' '+meateActionLabel(t));
+ done.addEventListener('click',()=>finishFromLeft(t));
+ row.append(button,more,done);
+ let touchX=null,touchY=null;
+ row.addEventListener('touchstart',e=>{const touch=e.touches[0];if(touch){touchX=touch.clientX;touchY=touch.clientY;}},{passive:true});
+ row.addEventListener('touchend',e=>{
+  if(touchX===null)return;
+  const touch=e.changedTouches[0];if(!touch)return;
+  const dx=touch.clientX-touchX,dy=touch.clientY-touchY;
+  touchX=null;touchY=null;
+  if(dx< -50&&Math.abs(dx)>Math.abs(dy)*1.25){e.preventDefault();meateReveal=t.id;renderMeate();}
+  else if(dx>50&&Math.abs(dx)>Math.abs(dy)*1.25){e.preventDefault();meateReveal=null;renderMeate();}
+ },{passive:false});
+ return row;
+}
+function canEditProgressInSlot(slot){return slot.slice(0,10)===tokyoToday()&&!readOnlyDevice}
+function recordMeateUnits(t,slot,delta){
+ if(!canEditProgressInSlot(slot)||![0,1,2].includes(Number(slot.slice(-1))))return;
+ const record=meateRecord(t,slot);
+ if(delta<0&&record.units<=0)return;
+ const before=totalOf(t);
+ if(t.kind==='reading'||t.kind==='practice'){
+  act(t.id,t.kind==='reading'?(delta>0?'reading-plus':'reading-minus'):(delta>0?'practice-plus':'practice-minus'));
+ }else if(t.kind==='count'||t.kind==='pages'){
+  const limit=Math.max(1,Math.min(50,Number(t.target||1)));
+  const base=Number(t.count||0);
+  const saved=Number(privateState?.tasks?.find(x=>x.id===t.id)?.count||0);
+  if(delta>0&&base>=limit)return;
+  if(delta<0&&base<=saved)return;
+  act(t.id,'dot',undefined,delta>0?base+1:base);
+ }else return;
+ if(totalOf(t)===before)return; // 上限・確定済み進捗により変更できなかった
+ const nextUnits=record.units+delta;
+ meateMarks[t.id]={...(meateMarks[t.id]||{}),[slot]:{units:Math.max(0,nextUnits),done:nextUnits>0?true:record.done&&delta>0}};
+ saveMeate();renderMeate();
+}
+function makeSlotChip(t,slot){
+ const record=meateRecord(t,slot);
+ const chip=document.createElement('div');
+ chip.className='planner-mini'+(t.subject==='other'?' is-other':'')+(record.done?' is-done':'');
+ const top=document.createElement('div');top.className='planner-mini-top';
+ const label=document.createElement('span');label.className='planner-mini-label';
+ label.textContent=(record.done?'✓ ':'')+t.title;label.title=t.title;
+ const remove=document.createElement('button');remove.type='button';remove.className='planner-mini-remove';
+ remove.textContent='×';remove.title='めあてから外す';
+ remove.setAttribute('aria-label',t.title+' をめあてから外す');
+ remove.disabled=readOnlyDevice;
+ remove.addEventListener('click',()=>removeMeate(t.id,slot));
+ top.append(label,remove);chip.append(top);
+ const controls=document.createElement('div');controls.className='planner-mini-controls';
+ const numerical=['reading','practice','count','pages'].includes(t.kind);
+ if(numerical){
+  const minus=document.createElement('button');minus.type='button';minus.textContent='−';
+  minus.title='この時間の記録を1つ戻す';minus.setAttribute('aria-label',t.title+' 1減らす');
+  minus.disabled=!canEditProgressInSlot(slot)||record.units<1||
+   ((t.kind==='count'||t.kind==='pages')&&Number(t.count||0)<=Number(privateState?.tasks?.find(x=>x.id===t.id)?.count||0));
+  minus.addEventListener('click',()=>recordMeateUnits(t,slot,-1));
+  const amount=document.createElement('span');amount.className='planner-mini-number';
+  amount.textContent=(record.units||0)+(t.kind==='reading'?'p':'回');
+  if(t.kind==='pages')amount.textContent=(record.units||0)+'p';
+  const plus=document.createElement('button');plus.type='button';plus.textContent='＋';
+  plus.title='この時間で1追加';plus.setAttribute('aria-label',t.title+' 1追加');
+  plus.disabled=!canEditProgressInSlot(slot)||
+   ((t.kind==='count'||t.kind==='pages')&&Number(t.count||0)>=Number(t.target||1));
+  plus.addEventListener('click',()=>recordMeateUnits(t,slot,1));
+  controls.append(minus,amount,plus);
+ }else{
+  const done=document.createElement('button');done.className='planner-check';done.type='button';
+  done.textContent=record.done?'✓ やった！':'○ やった';
+  done.disabled=readOnlyDevice;done.setAttribute('aria-pressed',String(record.done));
+  done.addEventListener('click',()=>markMeate(t,slot,!record.done));
+  controls.append(done);
+ }
+ chip.append(controls);return chip;
 }
 function renderMeate(){
  if(!tasks||!el('plannerGrid')||el('plannerView').hidden)return;
  const iso=tokyoToday(),items=meateItems();
  if(selectedTaskId&&!items.some(t=>t.id===selectedTaskId))selectedTaskId=null;
  const selected=items.find(t=>t.id===selectedTaskId);
- el('plannerSelection').textContent=selected?'選択中：'+selected.title+' → 時間帯の ＋ をタップ':'カードをえらんで、時間においてみよう';
- el('plannerHint').textContent=readOnlyDevice?'閲覧専用：このiPadではめあての変更はできません。':'めあてはいつでも変えていいよ。配置はこのiPadだけに保存されるよ。';
+ el('plannerSelection').textContent=selected?'選んだカード：'+selected.title+' → 右の ＋ をタップ':'左のカードを選び、やりたい時間におこう';
+ el('plannerHint').textContent=readOnlyDevice?'閲覧専用：記録の変更はできません。':'めあての予定・チェックはこのiPadだけ。実際にやった記録は「PBへ反映」から送れるよ。';
+ const plannedCompleted=tasks.filter(t=>complete(t)&&meateSlotOf(t).length);
  for(const subject of ['english','other']){
   const sub=items.filter(t=>t.subject===subject);
+  const done=plannedCompleted.filter(t=>t.subject===subject);
   const holder=el(subject==='english'?'englishCards':'otherCards');
-  // カードを選んだ後もスクロール位置を保つ。
-  const previousScroll=holder.scrollTop;
-  holder.replaceChildren();
+  const scroll=holder.scrollTop;holder.replaceChildren();
   sub.forEach(t=>holder.append(makeMeateCard(t)));
-  if(!sub.length){const empty=document.createElement('p');empty.className='muted small';empty.textContent='いまの宿題はないよ';holder.append(empty);}
-  holder.scrollTop=previousScroll;
+  if(!sub.length){
+   const empty=document.createElement('p');empty.className='muted small';empty.textContent='未完了の宿題はないよ';holder.append(empty);
+  }
+  if(done.length){
+   const toggle=document.createElement('button');toggle.className='planner-completed-toggle';toggle.type='button';
+   toggle.textContent=(meateCompletedExpanded?'▾':'▸')+' できた宿題 ('+done.length+')';
+   toggle.addEventListener('click',()=>{meateCompletedExpanded=!meateCompletedExpanded;renderMeate();});
+   holder.append(toggle);
+   if(meateCompletedExpanded)done.forEach(t=>{const line=document.createElement('div');line.className='planner-card-row is-done';
+    const b=document.createElement('button');b.className='planner-card';b.textContent='✓ '+t.title;
+    b.addEventListener('click',()=>openMeateDetail(t));line.append(b);holder.append(line);});
+  }
+  holder.scrollTop=scroll;
   el(subject==='english'?'plannerEnglishCount':'plannerOtherCount').textContent='('+sub.length+')';
-  el(subject==='english'?'englishScrollHint':'otherScrollHint').textContent=sub.length>3?'↕ 上下にスワイプ':'';
+  el(subject==='english'?'englishScrollHint':'otherScrollHint').textContent=sub.length>3?'↕ スワイプ':'';
  }
  plannerDayPage=Math.max(0,Math.min(plannerDayPage,Math.ceil(PLANNER_TOTAL_DAYS/PLANNER_DAYS_PER_PAGE)-1));
  const start=plannerDayPage*PLANNER_DAYS_PER_PAGE;
  const count=Math.min(PLANNER_DAYS_PER_PAGE,PLANNER_TOTAL_DAYS-start);
  const grid=el('plannerGrid');grid.replaceChildren();grid.style.setProperty('--planner-days',String(count));
- const current=currentPeriod();
- const periodNames=['🌅 朝','☀️ 昼','🌙 夜'];
+ const current=currentPeriod(),periodNames=['🌅 朝','☀️ 昼','🌙 夜'];
  for(let offset=0;offset<count;offset++){
   const idx=start+offset,date=addIsoDays(iso,idx);
   const day=document.createElement('div');day.className='planner-day'+(idx===0?' is-today':'');
-  const head=document.createElement('div');head.className='planner-day-head';head.textContent=(idx===0?'きょう　':idx===1?'あした　':'')+dateShort(date);day.append(head);
+  const head=document.createElement('div');head.className='planner-day-head';
+  head.textContent=(idx===0?'きょう　':idx===1?'あした　':'')+dateShort(date);day.append(head);
   for(let p=0;p<3;p++){
    const slot=date+':'+p,past=idx===0&&p<current,now=idx===0&&p===current;
    const box=document.createElement('div');box.className='planner-slot'+(past?' is-past':now?' is-now':'');
    const label=document.createElement('div');label.className='planner-slot-label';label.textContent=periodNames[p];box.append(label);
    const chipBox=document.createElement('div');chipBox.className='planner-slot-chips';
-   const scheduled=items.filter(t=>meateSlotOf(t).includes(slot));
-   scheduled.slice(0,2).forEach(t=>{
-    const chip=document.createElement('button');chip.type='button';chip.className='planner-chip'+(t.subject==='other'?' is-other':'');
-    chip.innerHTML='<span class="planner-chip-label">'+esc(t.title)+'</span><span aria-hidden="true">×</span>';
-    chip.title=t.title+'のめあてを外す';
-    chip.setAttribute('aria-label',t.title+'をめあてから外す');
-    chip.disabled=readOnlyDevice;
-    chip.addEventListener('click',()=>removeMeate(t.id,slot));chipBox.append(chip);
-   });
-   if(scheduled.length>2){
-    const more=document.createElement('button');more.type='button';more.className='planner-mini-more';more.textContent='ほか'+(scheduled.length-2)+'枚を見る';
-    more.addEventListener('click',()=>openMeateSlotDetail(slot,scheduled));chipBox.append(more);
-   }
+   // 全部Done後も当日のめあて達成履歴は残す。
+   const scheduled=tasks.filter(t=>meateSlotOf(t).includes(slot));
+   scheduled.slice(0,PLANNER_SLOT_MAX).forEach(t=>chipBox.append(makeSlotChip(t,slot)));
    box.append(chipBox);
    const add=document.createElement('button');add.type='button';add.className='planner-slot-add';
-   add.textContent=past?'すぎた':selected?(meateSlotOf(selected).includes(slot)?'↶ この枠から外す':'＋ ここにおく'):'＋';
-   add.disabled=!selected||past||readOnlyDevice;
-   add.setAttribute('aria-label',dateShort(date)+' '+periodNames[p]+'に選んだ宿題を置く');
-   add.addEventListener('click',()=>{if(selected)assignMeate(selected.id,slot);});box.append(add);
-   day.append(box);
+   const already=selected&&meateSlotOf(selected).includes(slot);
+   add.textContent=past?'すぎた':already?'↶ ここから外す':selected?'＋ ここにおく':'＋ カードをえらぼう';
+   add.disabled=!selected||past||readOnlyDevice||(!already&&scheduled.length>=PLANNER_SLOT_MAX);
+   add.setAttribute('aria-label',dateShort(date)+' '+periodNames[p]+'にカードを置く');
+   add.addEventListener('click',()=>{if(selected)assignMeate(selected.id,slot);});
+   box.append(add);day.append(box);
   }
   grid.append(day);
  }
  el('plannerDayRange').textContent=dateShort(addIsoDays(iso,start))+' 〜 '+dateShort(addIsoDays(iso,start+count-1));
  el('plannerDayPrev').disabled=plannerDayPage<=0;
  el('plannerDayNext').disabled=start+count>=PLANNER_TOTAL_DAYS;
-}
-function openMeateSlotDetail(slot,scheduled){
- const dialog=el('plannerDialog');
- el('plannerDialogTitle').textContent='この時間のめあて';
- el('plannerDialogDetail').textContent=scheduled.map(t=>'・'+t.title).join('\n');
- dialog.showModal();
+ if(el('plannerDialog').open&&dialogTaskId){
+  const t=tasks.find(x=>x.id===dialogTaskId);
+  if(t)el('plannerDialogExtras').replaceChildren(card(t));
+ }
 }
 
 const KEY='miori-homework-prototype-v1';
@@ -1044,7 +1231,7 @@ el('openWork').addEventListener('click',()=>setViewMode('work'));
 el('plannerDayPrev').addEventListener('click',()=>{plannerDayPage--;renderMeate();});
 el('plannerDayNext').addEventListener('click',()=>{plannerDayPage++;renderMeate();});
 el('plannerDialogClose').addEventListener('click',()=>el('plannerDialog').close());
-el('plannerDialogWork').addEventListener('click',()=>{el('plannerDialog').close();setViewMode('work');});
+el('plannerDialog').addEventListener('close',()=>{dialogTaskId=null;});
 el('refreshHomework').addEventListener('click',async()=>{
  const b=el('refreshHomework');
  b.disabled=true;
