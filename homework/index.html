@@ -456,6 +456,21 @@ function makeMeateCard(t){
  },{passive:false});
  return row;
 }
+function openMeateOverflow(slot,scheduled){
+ dialogTaskId=null;
+ el('plannerDialogTitle').textContent='この時間のめあて（'+scheduled.length+'こ）';
+ el('plannerDialogDetail').textContent='前の画面で4こを超えて置いたカードがあります。ここから整理できるよ。';
+ const extras=el('plannerDialogExtras');extras.replaceChildren();
+ for(const task of scheduled){
+  const line=document.createElement('div');line.className='parentrow';
+  const title=document.createElement('span');title.textContent=task.title;
+  const remove=document.createElement('button');remove.className='button';remove.type='button';remove.textContent='外す';
+  remove.disabled=readOnlyDevice;
+  remove.addEventListener('click',()=>{el('plannerDialog').close();removeMeate(task.id,slot);});
+  line.append(title,remove);extras.append(line);
+ }
+ el('plannerDialog').showModal();
+}
 function canEditProgressInSlot(slot){return slot.slice(0,10)===tokyoToday()&&!readOnlyDevice}
 function recordMeateUnits(t,slot,delta){
  if(!canEditProgressInSlot(slot)||![0,1,2].includes(Number(slot.slice(-1))))return;
@@ -567,10 +582,11 @@ function renderMeate(){
    box.append(chipBox);
    const add=document.createElement('button');add.type='button';add.className='planner-slot-add';
    const already=selected&&meateSlotOf(selected).includes(slot);
-   add.textContent=past?'すぎた':already?'↶ ここから外す':selected?'＋ ここにおく':'＋ カードをえらぼう';
-   add.disabled=!selected||past||readOnlyDevice||(!already&&scheduled.length>=PLANNER_SLOT_MAX);
-   add.setAttribute('aria-label',dateShort(date)+' '+periodNames[p]+'にカードを置く');
-   add.addEventListener('click',()=>{if(selected)assignMeate(selected.id,slot);});
+   const overflow=scheduled.length>PLANNER_SLOT_MAX;
+   add.textContent=overflow?'ほか'+(scheduled.length-PLANNER_SLOT_MAX)+'こ・タップで整理':past?'すぎた':already?'↶ ここから外す':selected?'＋ ここにおく':'＋ カードをえらぼう';
+   add.disabled=overflow?false:(!selected||past||readOnlyDevice||(!already&&scheduled.length>=PLANNER_SLOT_MAX));
+   add.setAttribute('aria-label',overflow?'すべてのめあてを見る':dateShort(date)+' '+periodNames[p]+'にカードを置く');
+   add.addEventListener('click',()=>{if(overflow)openMeateOverflow(slot,scheduled);else if(selected)assignMeate(selected.id,slot);});
    box.append(add);day.append(box);
   }
   grid.append(day);
