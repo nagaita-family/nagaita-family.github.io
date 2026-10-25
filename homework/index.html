@@ -356,6 +356,8 @@ function markMeate(t,slot,done,delta=0){
  if(saveMeate())renderMeate();
 }
 function eligibleForMeate(t,iso){
+ // 毎日のReadingは当日Done後も左にページ合計を残す。
+ if(t.kind==='reading')return true;
  if(complete(t))return false;
  if(t.kind==='practice'&&Number.isFinite(dayIndex(t.dueDate))&&dayIndex(t.dueDate)<dayIndex(iso))return false;
  return true;
@@ -398,7 +400,7 @@ function totalOf(t){
 function meateMetric(t){
  const n=totalOf(t);
  if(t.kind==='practice')return n+'回';
- if(t.kind==='reading')return n+'ページ';
+ if(t.kind==='reading')return n+'ページ'+(readingInfo(t,tokyoToday()).done?' ✓':'');
  if(t.kind==='count')return n+'/'+(t.target||1)+'回';
  if(t.kind==='pages')return n+'/'+(t.target||1)+'p';
  return '';
@@ -508,7 +510,7 @@ function makeSlotChip(t,slot){
  }else{
   const done=document.createElement('button');done.className='planner-check';done.type='button';
   done.textContent=record.done?'✓ やった！':'○ やった';
-  done.disabled=readOnlyDevice;done.setAttribute('aria-pressed',String(record.done));
+  done.disabled=readOnlyDevice||dayIndex(slot.slice(0,10))>dayIndex(tokyoToday());done.setAttribute('aria-pressed',String(record.done));
   done.addEventListener('click',()=>markMeate(t,slot,!record.done));
   controls.append(done);
  }
@@ -521,7 +523,7 @@ function renderMeate(){
  const selected=items.find(t=>t.id===selectedTaskId);
  el('plannerSelection').textContent=selected?'選んだカード：'+selected.title+' → 右の ＋ をタップ':'左のカードを選び、やりたい時間におこう';
  el('plannerHint').textContent=readOnlyDevice?'閲覧専用：記録の変更はできません。':'めあての予定・チェックはこのiPadだけ。実際にやった記録は「PBへ反映」から送れるよ。';
- const plannedCompleted=tasks.filter(t=>complete(t)&&meateSlotOf(t).length);
+ const plannedCompleted=tasks.filter(t=>t.kind!=='reading'&&complete(t)&&meateSlotOf(t).length);
  for(const subject of ['english','other']){
   const sub=items.filter(t=>t.subject===subject);
   const done=plannedCompleted.filter(t=>t.subject===subject);
