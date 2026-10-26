@@ -174,6 +174,8 @@ body.meate-active .shell>footer{display:none}
 .planner-card-metrics{font-size:11px;color:#3d7b58;background:#e6f4e8;padding:3px 5px;border-radius:7px;white-space:nowrap;flex:none}
 .planner-card-row.is-done .planner-card{opacity:.65}
 .planner-completed-toggle{width:100%;margin-top:5px;flex:none;border:1px solid #dfe5dd;border-radius:8px;background:#fff;color:#47735b;font-size:11px;padding:6px}
+.planner-previous-toggle{width:100%;margin-top:6px;flex:none;border:1px solid #dfdbce;border-radius:8px;background:#fcf8ee;color:#745b3c;font-size:11px;font-weight:700;padding:7px;text-align:left}
+.planner-card-row.is-previous .planner-card{background:#faf6ed}
 .planner-grid{grid-template-columns:repeat(var(--planner-days,2),minmax(0,1fr))}
 .planner-slot{gap:4px;padding:5px}
 .planner-slot-label{font-size:12px;min-height:15px}
@@ -325,7 +327,7 @@ for(const [id,records] of Object.entries(readMeateObject(MEATE_MARKS_KEY)).slice
  }
  meateMarks[id]=result;
 }
-let viewMode='plan',selectedTaskId=null,plannerDayPage=0,meateCompletedExpanded=false,meateReveal=null,dialogTaskId=null;
+let viewMode='plan',selectedTaskId=null,plannerDayPage=0,meateCompletedExpanded=false,meatePreviousExpanded=false,meateReveal=null,dialogTaskId=null;
 const PLANNER_DAYS_PER_PAGE=2,PLANNER_TOTAL_DAYS=8,PLANNER_SLOT_MAX=4;
 function setViewMode(){
  viewMode='plan';el('viewSwitch').hidden=true;
@@ -365,6 +367,20 @@ function eligibleForMeate(t,iso){
 function meateItems(){
  const iso=tokyoToday();
  return tasks.filter(t=>eligibleForMeate(t,iso));
+}
+// 過去分の未完了を当日の学校連絡に混ぜず、折りたたんで残す。
+function currentMeateTask(t,iso){
+ if(t.bucket==='old'||(t.dueDate&&t.dueDate<iso))return false;
+ if(t.kind==='reading'||t.kind==='practice'||t.dueType==='weekly')return true;
+ if(String(t.id||'').endsWith('-'+iso.replace(/-/g,'')))return true;
+ const md=Number(iso.slice(5,7))+'/'+Number(iso.slice(8,10));
+ if(String(t.detail||'').includes(md+'れんらくルーム'))return true;
+ return !t.dueDate||t.dueDate>iso;
+}
+function meateTaskTitle(t){
+ const sameTitle=tasks.some(x=>x.id!==t.id&&x.title===t.title);
+ const day=/-(\d{4})(\d{2})(\d{2})$/.exec(String(t.id||''));
+ return t.title+(sameTitle&&day?'（'+Number(day[2])+'/'+Number(day[3])+'分）':'');
 }
 function meateDateLimit(t){return Number.isFinite(dayIndex(t.dueDate))?addIsoDays(t.dueDate,-1):null}
 function assignMeate(id,slot){
@@ -430,11 +446,11 @@ function makeMeateCard(t){
  row.className='planner-card-row'+(meateReveal===t.id?' is-revealed':'');
  const button=document.createElement('button');button.type='button';
  button.className='planner-card'+(selectedTaskId===t.id?' is-selected':'');
- button.title=t.title;button.setAttribute('aria-pressed',String(selectedTaskId===t.id));
+ button.title=t.title+' / '+(t.detail||'');button.setAttribute('aria-pressed',String(selectedTaskId===t.id));
  const emoji=t.kind==='reading'?'📖':t.kind==='practice'?'👣':t.subject==='english'?'🔤':/算数/.test(t.title)?'🔢':'✏️';
  const count=meateSlotOf(t).filter(slot=>dayIndex(slot.split(':')[0])>=dayIndex(tokyoToday())).length;
  const metric=meateMetric(t);
- button.innerHTML='<span class="planner-card-icon" aria-hidden="true">'+emoji+'</span><span class="planner-card-title">'+esc(t.title)+'</span>'+(metric?'<span class="planner-card-metrics">'+esc(metric)+'</span>':count?'<span class="planner-card-count">'+count+'枠</span>':'');
+ button.innerHTML='<span class="planner-card-icon" aria-hidden="true">'+emoji+'</span><span class="planner-card-title">'+esc(meateTaskTitle(t))+'</span>'+(metric?'<span class="planner-card-metrics">'+esc(metric)+'</span>':count?'<span class="planner-card-count">'+count+'枠</span>':'');
  button.addEventListener('click',()=>{selectedTaskId=selectedTaskId===t.id?null:t.id;meateReveal=null;renderMeate();});
  const more=document.createElement('button');more.type='button';more.className='planner-more';
  more.textContent='⋯';more.title=t.title+'の操作';
@@ -498,7 +514,7 @@ function makeSlotChip(t,slot){
  chip.className='planner-mini'+(t.subject==='other'?' is-other':'')+(record.done?' is-done':'');
  const top=document.createElement('div');top.className='planner-mini-top';
  const label=document.createElement('span');label.className='planner-mini-label';
- label.textContent=(record.done?'✓ ':'')+t.title;label.title=t.title;
+ label.textContent=(record.done?'✓ ':'')+meateTaskTitle(t);label.title=t.title+' / '+(t.detail||'');
  const remove=document.createElement('button');remove.type='button';remove.className='planner-mini-remove';
  remove.textContent='×';remove.title='めあてから外す';
  remove.setAttribute('aria-label',t.title+' をめあてから外す');
@@ -534,19 +550,29 @@ function makeSlotChip(t,slot){
 function renderMeate(){
  if(!tasks||!el('plannerGrid')||el('plannerView').hidden)return;
  const iso=tokyoToday(),items=meateItems();
+ const currentItems=items.filter(t=>currentMeateTask(t,iso));
+ const previousItems=items.filter(t=>!currentMeateTask(t,iso));
  if(selectedTaskId&&!items.some(t=>t.id===selectedTaskId))selectedTaskId=null;
  const selected=items.find(t=>t.id===selectedTaskId);
  el('plannerSelection').textContent=selected?'選んだカード：'+selected.title+' → 右の ＋ をタップ':'左のカードを選び、やりたい時間におこう';
  el('plannerHint').textContent=readOnlyDevice?'閲覧専用：記録の変更はできません。':'めあての予定・チェックはこのiPadだけ。実際にやった記録は「PBへ反映」から送れるよ。';
  const plannedCompleted=tasks.filter(t=>t.kind!=='reading'&&complete(t));
  for(const subject of ['english','other']){
-  const sub=items.filter(t=>t.subject===subject);
+  const sub=currentItems.filter(t=>t.subject===subject);
+  const previous=previousItems.filter(t=>t.subject===subject);
   const done=plannedCompleted.filter(t=>t.subject===subject);
   const holder=el(subject==='english'?'englishCards':'otherCards');
   const scroll=holder.scrollTop;holder.replaceChildren();
   sub.forEach(t=>holder.append(makeMeateCard(t)));
   if(!sub.length){
-   const empty=document.createElement('p');empty.className='muted small';empty.textContent='未完了の宿題はないよ';holder.append(empty);
+   const empty=document.createElement('p');empty.className='muted small';empty.textContent='今やる宿題はないよ';holder.append(empty);
+  }
+  if(previous.length){
+   const toggle=document.createElement('button');toggle.className='planner-previous-toggle';toggle.type='button';
+   toggle.textContent=(meatePreviousExpanded?'▾':'▸')+' 前からの宿題・未完了 ('+previous.length+')';
+   toggle.addEventListener('click',()=>{meatePreviousExpanded=!meatePreviousExpanded;renderMeate();});
+   holder.append(toggle);
+   if(meatePreviousExpanded)previous.forEach(t=>{const row=makeMeateCard(t);row.classList.add('is-previous');holder.append(row);});
   }
   if(done.length){
    const toggle=document.createElement('button');toggle.className='planner-completed-toggle';toggle.type='button';
@@ -558,7 +584,7 @@ function renderMeate(){
     b.addEventListener('click',()=>openMeateDetail(t));line.append(b);holder.append(line);});
   }
   holder.scrollTop=scroll;
-  el(subject==='english'?'plannerEnglishCount':'plannerOtherCount').textContent='('+sub.length+')';
+  el(subject==='english'?'plannerEnglishCount':'plannerOtherCount').textContent='('+sub.length+(previous.length?' +前'+previous.length:'')+')';
   el(subject==='english'?'englishScrollHint':'otherScrollHint').textContent=sub.length>3?'↕ スワイプ':'';
  }
  plannerDayPage=Math.max(0,Math.min(plannerDayPage,Math.ceil(PLANNER_TOTAL_DAYS/PLANNER_DAYS_PER_PAGE)-1));
