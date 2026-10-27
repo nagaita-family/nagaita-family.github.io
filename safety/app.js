@@ -13,7 +13,7 @@ let settings=read(SETTING_KEY,{profile:oldSettings.profile||'naoya',phone:oldSet
 let pending=read(QUEUE_KEY,[]);
 if(!Array.isArray(pending))pending=[];
 let kids=new Set(),kidStatuses={miori:'safe',kosuke:'safe'},lastLocation=null,lastReport=null,gateway=null,user=null;
-let latest={},syncStates={},sending=false,selecting=settings.profile,onlineSDK=false;
+let latest={},syncStates={},sending=false,activeWriteEventId=null,selecting=settings.profile,onlineSDK=false;
 function saveSettings(){localStorage.setItem(SETTING_KEY,JSON.stringify(settings))}
 function saveQueue(){
  try{localStorage.setItem(QUEUE_KEY,JSON.stringify(pending));return true}
@@ -91,6 +91,7 @@ async function flush(){
      // even if navigator.onLine still says true. Never let the UI hang indefinitely.
      // Retaining the same event ID makes a later retry idempotent.
      let timer;
+     activeWriteEventId=job.eventId;
      try{
        await Promise.race([
          gateway.write(job),
@@ -98,7 +99,7 @@ async function flush(){
            timer=setTimeout(()=>reject(new Error('確認期限を超えました')),10000);
          })
        ]);
-     }finally{clearTimeout(timer)}
+     }finally{clearTimeout(timer);activeWriteEventId=null}
      pending.splice(index,1);saveQueue();showNet();
      inform('✓ Firestoreから保存確認（相手の閲覧済みではありません）',true);
    }
@@ -125,8 +126,14 @@ function report(status){
    // Unsent creates receive GPS inline; already transmitted creates get a location-only patch.
    for(const p of jobsWithLocation){
      const existing=pending.find(j=>j.type==='create'&&j.eventId===p.eventId);
-     if(existing)existing.location=loc;
-     else pending.push(p);
+     if(existing && activeWriteEventId!==p.eventId){
+       // A create not sent yet can include GPS without an extra cloud write.
+       existing.location=loc;
+     }else{
+       // If a create is already in flight, its payload was read before GPS arrived.
+       // Queue an independent patch so the location can never be silently lost.
+       pending.push(p);
+     }
    }
    saveQueue();showNet();flush();
  });
