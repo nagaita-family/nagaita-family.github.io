@@ -8,7 +8,7 @@ window.FAMILY_FIREBASE = {
     appId: ""
   },
   parents: {
-    naoya: "",   // Google Auth UID for Naoya
-    shoko: ""    // Google Auth UID for Shoko
+    naoya: "",   // Firebase anonymous device UID for Naoya
+    shoko: ""    // Firebase anonymous device UID for Shoko
   }
 };
