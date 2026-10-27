@@ -84,7 +84,7 @@ function report(status){
  lastReport={status,at,reporter,people:jobs.map(j=>j.person)};
  enqueue(jobs);
  inform(!configured?'端末に記録しました。Firebaseが未設定のため送信されていません。SMSをご利用ください':
-   !currentRole()?'端末に記録しました。Googleログイン後に送信します':
+   !currentRole()?'端末に記録しました。端末登録後に送信します':
    '端末に記録しました。Firestoreへ送信中…');
  flush();
  // Never wait for GPS to send the safety state.
@@ -133,8 +133,8 @@ function render(){ $('people').replaceChildren(...Object.keys(NAMES).map(card)) 
 function messageOf(error){
  const code=error?.code||'';
  if(code==='permission-denied')return '家族用アクセス権限が未設定です';
- if(code==='auth/unauthorized-domain')return 'Firebaseの認証ドメインを設定してください';
- if(code==='auth/popup-closed-by-user')return 'ログインが中断されました';
+ if(code==='auth/operation-not-allowed')return 'Firebaseで匿名認証を有効にしてください';
+ if(code==='auth/network-request-failed')return '認証用ネットワークに接続できません';
  if(code==='unavailable'||code==='deadline-exceeded')return 'ネットワークまたはFirestoreが利用できません';
  return error?.message||'通信エラー';
 }
@@ -143,7 +143,7 @@ function refresh(){
  const known=Object.values(syncStates);
  const server=known.length===4&&known.every(x=>!x.fromCache);
  $('lastSync').textContent=!configured?'Firebase未接続・最新情報は表示できません':
-   !currentRole()?'家族としてログインすると安否を取得できます':
+   !currentRole()?'この端末は登録待ちです。安否は端末に保存できます':
    server?'✓ クラウドから受信 '+fmt(Date.now()):'オフライン／一部キャッシュ情報（現在の安否は未確認）';
 }
 function showSetup(){
@@ -151,8 +151,10 @@ function showSetup(){
  selecting=settings.profile;selectSetup(selecting);
  $('phoneInput').value=settings.phone||'';
  $('setupError').textContent=!configured?
-  'Firebaseプロジェクト未接続です。連携が完了するまでは端末内保存とSMSのみ利用できます。':
-  user?.role?'Googleログイン済み：'+(user.email||user.uid):'Googleアカウントでログインしてください。';
+  'Firebaseは接続準備中です。安否は端末保存・SMSで共有できます。':
+  user?.role?'端末登録済み：'+NAMES[user.role]+'（ログイン操作不要）':
+  user?.uid?'初回登録用の端末ID：'+user.uid+'　このIDを家族管理者がFirebaseに登録してください。':
+  '端末IDを準備中。初回だけインターネット接続が必要です。';
  $('setupTitle').textContent='家族の初期設定';
 }
 function selectSetup(p){
@@ -164,13 +166,10 @@ function savePhone(){
  saveSettings();$('setupError').textContent='SMSの宛先を端末に保存しました';
  $('setup').classList.add('hide');
 }
-async function login(){
- if(!configured||!gateway){$('setupError').textContent='Firebaseの接続設定がまだありません';return}
- $('setupError').textContent='Googleログインを開いています…';
- try {
-   await gateway.login();
-   if(currentRole()){$('setup').classList.add('hide');}
- }catch(e){$('setupError').textContent='ログイン失敗：'+messageOf(e)}
+function closeSetup() {
+ settings.profile=selecting;saveSettings();
+ if(user?.role)profile(user.role); else profile(settings.profile);
+ $('setup').classList.add('hide');
 }
 function sms(){
  const number=settings.phone;
@@ -195,10 +194,10 @@ async function prepareFirebase(){
         localStorage.removeItem('family-safety-settings-v1');
         $('setup').classList.add('hide');flush();
       }else if(u){
-        $('setup').classList.remove('hide');
-        $('setupError').textContent='ログインできましたが家族登録が未完了です。管理者にこのUIDを登録してください：'+u.uid;
-      }else{
         showSetup();
+        $('setupError').textContent='初回登録用の端末ID：'+u.uid+'　このIDを家族管理者がFirebaseに登録してください。登録後、アプリを再起動してください。';
+      }else if(!navigator.onLine){
+        inform('オフラインです。以前の端末認証がない場合は送信待ちとして保存します。');
       }
       showNet();refresh();
     },
@@ -219,16 +218,16 @@ function init(){
  for(const p of ['miori','kosuke'])$('kid-'+p).onclick=()=>kid(p);
  $('safe').onclick=()=>report('safe');$('help').onclick=()=>report('help');
  $('refresh').onclick=refresh;$('retry').onclick=flush;$('sms').onclick=sms;
- $('settings').onclick=showSetup;$('setupGo').onclick=login;
+ $('settings').onclick=showSetup;$('setupGo').onclick=closeSetup;
  $('savePhone').onclick=savePhone;
  addEventListener('online',()=>{showNet();flush();refresh()});
  addEventListener('offline',()=>{showNet();refresh()});
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){showNet();flush();refresh()}});
  setInterval(()=>{if(!document.hidden){refresh();flush()}},30000);
  if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').catch(()=>{});
- // Firestore retains all previous reports; only the newest event per person is shown.
- if(configured)showSetup();
- else inform('Firebaseは接続設定待ちです。安否は端末に保存でき、SMSを送信できます。');
+ // No Google login, password, or user sign-in on disaster day.
+ // Enrolled devices silently restore their Firebase anonymous identity.
+ if(!configured)inform('Firebaseは接続設定待ちです。安否は端末に保存でき、SMSを送信できます。');
  prepareFirebase();
  gps();
 }
