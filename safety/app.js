@@ -12,7 +12,7 @@ const oldSettings=read('family-safety-settings-v1',{});
 let settings=read(SETTING_KEY,{profile:oldSettings.profile||'naoya',phone:oldSettings.phone||''});
 let pending=read(QUEUE_KEY,[]);
 if(!Array.isArray(pending))pending=[];
-let kids=new Set(),lastLocation=null,lastReport=null,gateway=null,user=null;
+let kids=new Set(),kidStatuses={miori:'safe',kosuke:'safe'},lastLocation=null,lastReport=null,gateway=null,user=null;
 let latest={},syncStates={},sending=false,selecting=settings.profile,onlineSDK=false;
 function saveSettings(){localStorage.setItem(SETTING_KEY,JSON.stringify(settings))}
 function saveQueue(){
@@ -39,10 +39,21 @@ function profile(p){
  }
 }
 function kid(p){
- if(kids.has(p))kids.delete(p); else kids.add(p);
+ if(kids.has(p))kids.delete(p); else {kids.add(p);kidStatuses[p]='safe'}
  $('kid-'+p).classList.toggle('selected',kids.has(p));
  $('kid-'+p).setAttribute('aria-pressed',String(kids.has(p)));
  $('kid-'+p).textContent=(kids.has(p)?'✓ ':'○ ')+NAMES[p];
+ $('state-'+p).classList.toggle('hide',!kids.has(p));
+ kidStateLabel(p);
+}
+function kidStateLabel(p){
+ $('state-'+p).textContent=kidStatuses[p]==='safe'?'状態：無事 ▾':'状態：要支援 ▾';
+ $('state-'+p).classList.toggle('alert',kidStatuses[p]==='help');
+}
+function switchKidStatus(p){
+ if(!kids.has(p))return;
+ kidStatuses[p]=kidStatuses[p]==='safe'?'help':'safe';
+ kidStateLabel(p);
 }
 function gps(callback){
  if(!navigator.geolocation){$('gps').textContent='📍 GPSが使えません。安否のみ保存します';return}
@@ -96,9 +107,10 @@ async function flush(){
 }
 function report(status){
  const at=Date.now(),where=recentLocation(),reporter=settings.profile;
- const jobs=[reporter,...kids].map(person=>({type:'create',eventId:eventId(),
-   person,reporter,status,observedAt:at,...(where?{location:where}:{})}));
- lastReport={status,at,reporter,people:jobs.map(j=>j.person)};
+ const people=[{person:reporter,status}, ...[...kids].map(person=>({person,status:kidStatuses[person]}))];
+ const jobs=people.map(({person,status:memberStatus})=>({type:'create',eventId:eventId(),
+   person,reporter,status:memberStatus,observedAt:at,...(where?{location:where}:{})}));
+ lastReport={at,reporter,people:people.map(x=>({...x}))};
  const persisted=enqueue(jobs);
  inform(!persisted?'⚠ 端末内への保存に失敗。アプリを閉じず、SMSで連絡してください':
    !configured?'端末に保存済み。Firebase未設定のため相手へは未送信。SMSをご利用ください':
@@ -193,8 +205,9 @@ function sms(){
  const number=settings.phone;
  if(!number){showSetup();$('setupError').textContent='SMSを送る相手の電話番号を登録してください';return}
  if(!lastReport){inform('先に「無事です」または「助けて」で状況を選んでください');return}
- const status=lastReport.status==='safe'?'無事':'要支援',where=recentLocation();
- const msg='【家族の安否】'+lastReport.people.map(p=>NAMES[p]).join('・')+'：'+status+
+ const where=recentLocation();
+ const people=lastReport.people.map(p=>NAMES[p.person]+'：'+(p.status==='safe'?'無事':'要支援')).join(' / ');
+ const msg='【家族の安否】'+people+
  '　報告 '+fmt(lastReport.at)+(where?'　位置 https://maps.google.com/?q='+where.lat+','+where.lon:'（位置未取得）');
  const sep=/iPhone|iPad|iPod/i.test(navigator.userAgent)?'&':'?';
  location.href='sms:'+encodeURIComponent(number)+sep+'body='+encodeURIComponent(msg);
@@ -233,7 +246,10 @@ function init(){
    $('profile-'+p).onclick=()=>profile(p);
    $('setup-'+p).onclick=()=>selectSetup(p);
  }
- for(const p of ['miori','kosuke'])$('kid-'+p).onclick=()=>kid(p);
+ for(const p of ['miori','kosuke']){
+   $('kid-'+p).onclick=()=>kid(p);
+   $('state-'+p).onclick=()=>switchKidStatus(p);
+ }
  $('safe').onclick=()=>report('safe');$('help').onclick=()=>report('help');
  $('refresh').onclick=refresh;$('retry').onclick=flush;$('sms').onclick=sms;
  $('settings').onclick=showSetup;$('setupGo').onclick=closeSetup;
