@@ -42,10 +42,13 @@ function report(state){if(!cfg.key){showSetup();return}
  })}
 function card(p){const record=latest[p];const box=document.createElement('article');box.className='person';
  const title=document.createElement('h3');title.textContent=NAMES[p];box.append(title);
- const state=document.createElement('div');state.className='status '+(record?.state==='safe'?'ok':record?.state==='help'?'danger':'unknown');
- state.textContent=record?.state==='safe'?'✓ 無事':record?.state==='help'?'! 要支援':'— 未確認';box.append(state);
+ const state=document.createElement('div');
+ const stale=record&&Date.now()-record.observedAt>3600000;
+ state.className='status '+(stale?'unknown':record?.state==='safe'?'ok':record?.state==='help'?'danger':'unknown');
+ state.textContent=record?.state==='safe'?(stale?'⚠ 前回：無事':'✓ 無事'):record?.state==='help'?(stale?'⚠ 前回：要支援':'! 要支援'):'— 未確認';
+ box.append(state);
  const detail=document.createElement('div');detail.className='detail';
- detail.textContent=record?'報告 '+fmt(record.observedAt)+' / '+(NAMES[record.reporter]||'不明'):'報告なし';box.append(detail);
+ detail.textContent=record?'報告 '+fmt(record.observedAt)+' / '+(NAMES[record.reporter]||'不明')+(stale?'（現在の安否とは限りません）':''):'報告なし';box.append(detail);
  if(record?.location){const d=document.createElement('div');d.className='detail';const link=document.createElement('a');
  link.href='https://www.google.com/maps?q='+record.location.lat+','+record.location.lon;link.target='_blank';link.rel='noopener noreferrer';link.textContent='📍 地図で見る';d.append(link,document.createElement('br'),document.createTextNode('取得 '+fmt(record.location.at)+(Date.now()-record.location.at>900000?'・15分以上前':'')));box.append(d)}
  return box}
