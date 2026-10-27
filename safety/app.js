@@ -15,13 +15,16 @@ if(!Array.isArray(pending))pending=[];
 let kids=new Set(),lastLocation=null,lastReport=null,gateway=null,user=null;
 let latest={},syncStates={},sending=false,selecting=settings.profile,onlineSDK=false;
 function saveSettings(){localStorage.setItem(SETTING_KEY,JSON.stringify(settings))}
-function saveQueue(){localStorage.setItem(QUEUE_KEY,JSON.stringify(pending))}
+function saveQueue(){
+ try{localStorage.setItem(QUEUE_KEY,JSON.stringify(pending));return true}
+ catch(e){console.warn('Safety queue could not persist',e);return false}
+}
 function fmt(ms){return ms?new Date(ms).toLocaleString('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'不明'}
 function inform(message,good=false){$('notice').textContent=message;$('notice').className=message?'notice '+(good?'good':''):''}
 function showNet(){
  $('dot').style.background=navigator.onLine?'#13a77b':'#c34a4a';
  $('network').textContent=navigator.onLine?
-   (gateway&&user?.role?'Firebase接続済み':'通信可能・Firebase接続待ち'):'オフライン';
+   (gateway&&user?.role?'端末登録済み・クラウド接続確認は下の時刻を参照':'通信可能・Firebase接続待ち'):'オフライン';
  const oldQueue=read('family-safety-queue-v1',[]);
  $('pending').textContent=(pending.length?'新方式の送信待ち：'+pending.length+'件。':'送信待ちなし。')+
    (oldQueue.length?' 旧Netlify方式の未送信'+oldQueue.length+'件は自動移行していません。':'');
@@ -55,7 +58,10 @@ function gps(callback){
 function recentLocation(){return lastLocation&&Date.now()-lastLocation.at<120000?lastLocation:null}
 function eventId(){return crypto.randomUUID().replaceAll('-','')}
 function enqueue(events){
- pending.push(...events);saveQueue();showNet();
+ pending.push(...events);
+ const durable=saveQueue();
+ showNet();
+ return durable;
 }
 function currentRole(){return user?.role||null}
 async function flush(){
@@ -66,13 +72,24 @@ async function flush(){
      // Keep another parent's old reports, but never let them block this parent's reports.
      const index=pending.findIndex(j=>j.reporter===currentRole());
      if(index<0) {
-       inform('別の人の未送信報告があります。該当者のGoogleアカウントで送信してください');
+       inform('別の端末登録者の未送信報告があります。本人の登録端末で確認してください');
        break;
      }
      const job=pending[index];
-     await gateway.write(job);
+     // Firestore promises may remain pending indefinitely after losing connectivity,
+     // even if navigator.onLine still says true. Never let the UI hang indefinitely.
+     // Retaining the same event ID makes a later retry idempotent.
+     let timer;
+     try{
+       await Promise.race([
+         gateway.write(job),
+         new Promise((_,reject)=>{
+           timer=setTimeout(()=>reject(new Error('確認期限を超えました')),10000);
+         })
+       ]);
+     }finally{clearTimeout(timer)}
      pending.splice(index,1);saveQueue();showNet();
-     inform('✓ Firestoreに保存済み（家族の閲覧確認ではありません）',true);
+     inform('✓ Firestoreから保存確認（相手の閲覧済みではありません）',true);
    }
  }catch(e){inform('送信できません：'+messageOf(e)+'。端末に保存したまま再送します')}
  finally{sending=false;showNet()}
@@ -82,10 +99,11 @@ function report(status){
  const jobs=[reporter,...kids].map(person=>({type:'create',eventId:eventId(),
    person,reporter,status,observedAt:at,...(where?{location:where}:{})}));
  lastReport={status,at,reporter,people:jobs.map(j=>j.person)};
- enqueue(jobs);
- inform(!configured?'端末に記録しました。Firebaseが未設定のため送信されていません。SMSをご利用ください':
-   !currentRole()?'端末に記録しました。端末登録後に送信します':
-   '端末に記録しました。Firestoreへ送信中…');
+ const persisted=enqueue(jobs);
+ inform(!persisted?'⚠ 端末内への保存に失敗。アプリを閉じず、SMSで連絡してください':
+   !configured?'端末に保存済み。Firebase未設定のため相手へは未送信。SMSをご利用ください':
+   !currentRole()?'端末に保存済み。登録完了まで相手へは未送信':
+   '端末に保存済み。Firestoreへ送信中…');
  flush();
  // Never wait for GPS to send the safety state.
  gps(loc=>{
