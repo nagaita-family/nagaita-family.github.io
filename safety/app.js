@@ -63,14 +63,15 @@ async function flush(){
  sending=true;
  try {
    while(pending.length&&navigator.onLine){
-     const job=pending[0];
-     // Only the identity that recorded the report can submit it.
-     if(job.reporter!==currentRole()) {
-       inform('この端末に別の人の未送信報告があります。本人のGoogleアカウントで送信してください');
+     // Keep another parent's old reports, but never let them block this parent's reports.
+     const index=pending.findIndex(j=>j.reporter===currentRole());
+     if(index<0) {
+       inform('別の人の未送信報告があります。該当者のGoogleアカウントで送信してください');
        break;
      }
+     const job=pending[index];
      await gateway.write(job);
-     pending.shift();saveQueue();showNet();
+     pending.splice(index,1);saveQueue();showNet();
      inform('✓ Firestoreに保存済み（家族の閲覧確認ではありません）',true);
    }
  }catch(e){inform('送信できません：'+messageOf(e)+'。端末に保存したまま再送します')}
