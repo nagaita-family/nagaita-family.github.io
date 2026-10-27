@@ -3,11 +3,17 @@ service cloud.firestore {
   match /databases/{database}/documents {
     // IMPORTANT: replace both UIDs in Firebase Console / deploy rules before use.
     // Until then, all family data is inaccessible.
+    // Anonymous sign-in is silent, but NOT public access.
+    // Only the two pre-approved anonymous UIDs can read/write family data.
+    function enrolledAnonymous() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider == "anonymous";
+    }
     function naoya() {
-      return request.auth != null && request.auth.uid == "REPLACE_WITH_NAOYA_AUTH_UID";
+      return enrolledAnonymous() && request.auth.uid == "REPLACE_WITH_NAOYA_AUTH_UID";
     }
     function shoko() {
-      return request.auth != null && request.auth.uid == "REPLACE_WITH_SHOKO_AUTH_UID";
+      return enrolledAnonymous() && request.auth.uid == "REPLACE_WITH_SHOKO_AUTH_UID";
     }
     function role() {
       return naoya() ? "naoya" : (shoko() ? "shoko" : "none");
