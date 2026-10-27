@@ -161,7 +161,7 @@ function selectSetup(p){
 function savePhone(){
  settings.phone=$('phoneInput').value.trim().replace(/[ -]/g,'');
  saveSettings();$('setupError').textContent='SMSの宛先を端末に保存しました';
- if(user?.role || !configured)$('setup').classList.add('hide');
+ $('setup').classList.add('hide');
 }
 async function login(){
  if(!configured||!gateway){$('setupError').textContent='Firebaseの接続設定がまだありません';return}
