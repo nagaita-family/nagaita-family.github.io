@@ -41,10 +41,13 @@ service cloud.firestore {
         && validData(person);
       allow update: if role() != "none" && personOK(person)
         && resource.data.reporter == role()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["location"])
         && request.resource.data.keys().hasOnly(["person","reporter","status","observedAt","location"])
-        && ("location" in request.resource.data)
-        && locOK(request.resource.data.location);
+        && (
+          request.resource.data == resource.data
+          || (request.resource.data.diff(resource.data).affectedKeys().hasOnly(["location"])
+              && ("location" in request.resource.data)
+              && locOK(request.resource.data.location))
+        );
       allow delete: if false;
     }
     match /{document=**} {
