@@ -48,7 +48,7 @@ export function createFirebaseGateway(configuration, hooks) {
       if(job.type==="create") {
         const {eventId, person, reporter, status, observedAt, location}=job;
         if(person!==myRole() && person!=="miori" && person!=="kosuke") throw new Error("別の大人の安否は代理登録できません");
-        await setDoc(ref(person,eventId),{person,reporter,status,observedAt,...(location?{location}:{})});
+        await setDoc(ref(person,eventId),{person,reporter,status,observedAt,...(location?{location}:{})},{merge:true});
       } else if(job.type==="location") {
         await updateDoc(ref(job.person,job.eventId),{location:job.location});
       } else throw new Error("不正な報告形式");
