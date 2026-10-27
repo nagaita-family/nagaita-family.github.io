@@ -1,6 +1,6 @@
 /* Firebase SDK v13.1.0; static web module imports (official CDN) */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js";
 import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, memoryLocalCache,
   collection, doc, setDoc, updateDoc, query, orderBy, limit, onSnapshot } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-firestore.js";
 
@@ -21,15 +21,23 @@ export function createFirebaseGateway(configuration, hooks) {
   function close() { for(const stop of stops) stop(); stops=[]; }
   function myRole() {
     const uid=auth.currentUser?.uid;
-    if (!uid) return null;
+    if (!uid || !auth.currentUser?.isAnonymous) return null;
     if (uid===configuration.parents.naoya) return "naoya";
     if (uid===configuration.parents.shoko) return "shoko";
     return null;
   }
-  onAuthStateChanged(auth, user => {
+  // Firebase stores anonymous identity locally; a device enrolled while online
+  // can restart without a Google login or any user sign-in action.
+  onAuthStateChanged(auth, async user => {
     close();
-    hooks.onUser(user?{uid:user.uid, email:user.email||"", role:myRole()}:null);
-    if (!user || !myRole()) return;
+    if (!user) {
+      hooks.onUser(null);
+      try { await signInAnonymously(auth); }
+      catch (error) { hooks.onError(error); }
+      return;
+    }
+    hooks.onUser({uid:user.uid, role:myRole(), isAnonymous:user.isAnonymous});
+    if (!myRole()) return;
     for (const person of PEOPLE) {
       const q=query(collection(root,person,"reports"),orderBy("observedAt","desc"),limit(1));
       stops.push(onSnapshot(q,{includeMetadataChanges:true},snap=>{
@@ -40,8 +48,6 @@ export function createFirebaseGateway(configuration, hooks) {
   },hooks.onError);
   const ref = (person, eventId)=>doc(root,person,"reports",eventId);
   return {
-    login:()=>signInWithPopup(auth,new GoogleAuthProvider()),
-    logout:()=>signOut(auth),
     role:()=>myRole(),
     write: async job => {
       if (!myRole()) throw new Error("家族として認証されていません");
