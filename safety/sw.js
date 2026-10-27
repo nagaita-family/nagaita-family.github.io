@@ -1,1 +1,26 @@
-const CACHE='family-safety-20261027a',ASSETS=['./','./index.html','./app.js','./icon.svg','./manifest.webmanifest'];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{const u=new URL(e.request.url);if(e.request.method!=='GET'||u.origin!==self.location.origin)return;e.respondWith(fetch(e.request).then(r=>{if(r.ok){const clone=r.clone();caches.open(CACHE).then(c=>c.put(e.request,clone))}return r}).catch(()=>caches.match(e.request)))});
+/* Network-first local shell. External Firebase modules cache after first successful load. */
+const CACHE='family-safety-firebase-20261027-v2';
+const ASSETS=['./','./index.html','./app.js','./firebase-config.js','./firebase-client.js','./icon.svg','./manifest.webmanifest'];
+self.addEventListener('install',event=>{
+ event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
+});
+self.addEventListener('activate',event=>{
+ event.waitUntil(caches.keys().then(names=>Promise.all(names.filter(name=>name.startsWith('family-safety-')&&name!==CACHE).map(name=>caches.delete(name)))).then(()=>self.clients.claim()));
+});
+self.addEventListener('fetch',event=>{
+ const request=event.request,url=new URL(request.url);
+ if(request.method!=='GET')return;
+ const firebaseModule=url.origin==='https://www.gstatic.com'&&url.pathname.startsWith('/firebasejs/13.1.0/');
+ if(!firebaseModule&&url.origin!==self.location.origin)return;
+ if(firebaseModule){
+   event.respondWith(caches.match(request).then(hit=>hit||fetch(request).then(response=>{
+     if(response.ok)caches.open(CACHE).then(cache=>cache.put(request,response.clone()));
+     return response;
+   })));
+   return;
+ }
+ event.respondWith(fetch(request).then(response=>{
+   if(response.ok)caches.open(CACHE).then(cache=>cache.put(request,response.clone()));
+   return response;
+ }).catch(()=>caches.match(request)));
+});
