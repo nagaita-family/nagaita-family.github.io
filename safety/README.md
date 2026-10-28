@@ -4,10 +4,13 @@
 操作担当：直也と彰子の各1台。美織・こうすけは同席を確認した親が代理報告。
 公開予定URL: https://family.nagaita.jp/safety/ （コードのGitHub反映と本番Web公開は別途検証する）
 
-## 重要：未稼働
+## 現在の設定状況
 
-現時点で `safety/firebase-config.js` に実プロジェクトが設定されていないため、**Firestoreへの送信・同期は稼働していない**。端末内記録とSMSの操作のみ。
-FirebaseプロジェクトとFirestoreルールの本番設定・通信テストが済むまで緊急連絡の主手段にしない。
+Firebaseプロジェクト `nagaita-family-safety` の匿名認証とFirestore Standard（既定DB・東京）を設定済み。
+公開Web設定と直也・彰子の承認端末UIDをコードに登録済み。
+**Firestoreの2台限定ルールはコンソールへのアクセスエラーのため未適用・実行検証待ち。**
+`firestore.rules` を対象プロジェクトでコンパイル・テストし、公開するまでクラウド共有の稼働完了とは扱わない。
+最後に確認した本番ルールは全read/write拒否。ルール公開はGitHub Pagesの公開とは別。
 
 ## 災害時の体験
 

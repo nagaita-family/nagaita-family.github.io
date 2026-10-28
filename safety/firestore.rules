@@ -1,19 +1,21 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // IMPORTANT: replace both UIDs in Firebase Console / deploy rules before use.
-    // Until then, all family data is inaccessible.
-    // Anonymous sign-in is silent, but NOT public access.
-    // Only the two pre-approved anonymous UIDs can read/write family data.
+    // Model: families/home/members/{naoya|shoko|miori|kosuke}/reports/{eventId}.
+    // Required: person, reporter, status (fixed enums), observedAt (epoch milliseconds).
+    // Optional: location {lat, lon, accuracy, at}; all keys and numeric ranges bounded.
+    // Reports are immutable except for the original reporter's location-only updates.
+    // Old observed times remain valid for offline queue replay; future times are bounded.
+    // Both enrolled parents explicitly share this family's status and location data.
     function enrolledAnonymous() {
       return request.auth != null
         && request.auth.token.firebase.sign_in_provider == "anonymous";
     }
     function naoya() {
-      return enrolledAnonymous() && request.auth.uid == "REPLACE_WITH_NAOYA_AUTH_UID";
+      return enrolledAnonymous() && request.auth.uid == "zxyj65RdcHOBqehzCwrmvSYtV463";
     }
     function shoko() {
-      return enrolledAnonymous() && request.auth.uid == "REPLACE_WITH_SHOKO_AUTH_UID";
+      return enrolledAnonymous() && request.auth.uid == "jJjU05iswHaiVaYK8uLXrt9pGT12";
     }
     function role() {
       return naoya() ? "naoya" : (shoko() ? "shoko" : "none");
@@ -27,7 +29,8 @@ service cloud.firestore {
         && x.lat is number && x.lon is number && x.accuracy is number
         && x.lat >= -90 && x.lat <= 90 && x.lon >= -180 && x.lon <= 180
         && x.accuracy >= 0 && x.accuracy <= 100000
-        && x.at is int && x.at > 1500000000000;
+        && x.at is int && x.at > 1500000000000
+        && x.at <= request.time.toMillis() + 300000;
     }
     function validData(p) {
       let d = request.resource.data;
@@ -36,6 +39,7 @@ service cloud.firestore {
         && d.person == p && d.reporter == role()
         && d.status in ["safe","help"]
         && d.observedAt is int && d.observedAt > 1500000000000
+        && d.observedAt <= request.time.toMillis() + 300000
         && (!("location" in d) || locOK(d.location));
     }
 
@@ -47,6 +51,8 @@ service cloud.firestore {
         && validData(person);
       allow update: if role() != "none" && personOK(person)
         && resource.data.reporter == role()
+        && (person == role() || person in ["miori","kosuke"])
+        && validData(person)
         && request.resource.data.keys().hasOnly(["person","reporter","status","observedAt","location"])
         && (
           request.resource.data == resource.data
