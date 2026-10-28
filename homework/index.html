@@ -214,6 +214,17 @@ body.meate-active .mode{padding:3px 8px;margin-bottom:4px;font-size:10px}
  .planner-pb #pbReportState{display:none}
  .planner-layout{grid-template-columns:minmax(150px,34%) minmax(0,1fr)}
 }
+
+/* Keep long homework titles and revealed actions inside the left planner column. */
+.planner-layout > .planner-palette,
+.planner-palette > .planner-subject,
+.planner-subject > .planner-cards,
+.planner-card-row{min-width:0;max-width:100%;box-sizing:border-box}
+.planner-palette > .planner-subject{overflow:hidden}
+.planner-card-row{width:100%;overflow:hidden}
+.planner-card-row > .planner-card{width:auto;min-width:0;flex:1 1 0}
+.planner-card-row .planner-card-title{min-width:0;flex:1 1 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.planner-card-row .planner-done-action{flex:0 0 auto;min-width:0;max-width:46%;white-space:normal;overflow-wrap:anywhere}
 </style></head><body><main class="shell">
 <header><div><h1>🌷 Miori's Homework</h1><div class="muted small" id="today"></div></div><div class="toplinks"><button class="button small" id="refreshHomework" type="button" aria-label="宿題一覧を最新に更新">↻ Refresh</button><button class="button small" id="parentLink">For Parents ›</button></div></header>
 <div class="mode" id="modeBanner">🔐 宿題データを確認中…</div>
