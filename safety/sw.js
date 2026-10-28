@@ -1,5 +1,5 @@
 /* Network-first local shell. External Firebase modules cache after first successful load. */
-const CACHE='family-safety-firebase-20261027-v2';
+const CACHE='family-safety-firebase-20261028-v3';
 const ASSETS=['./','./index.html','./app.js','./firebase-config.js','./firebase-client.js','./icon.svg','./manifest.webmanifest'];
 self.addEventListener('install',event=>{
  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting()));
