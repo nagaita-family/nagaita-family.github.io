@@ -90,15 +90,15 @@ footer{padding-top:25px;color:#7d8985;font-size:12px}
 .planner-heading h2{font-size:clamp(19px,2.5vw,25px);margin:0;letter-spacing:-.04em;color:#344f43}
 .planner-message{font-size:12px;color:#708177;min-width:0;text-align:right}
 .planner-layout{display:grid;grid-template-columns:minmax(235px,34%) minmax(0,1fr);gap:12px;min-height:0;flex:1}
-.planner-palette{display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:9px;min-height:0}
-.planner-subject{display:flex;flex-direction:column;min-height:0;padding:10px;border-radius:17px;border:1px solid #e3eae5;background:#f3f8f3}
+.planner-palette{display:grid;grid-template-rows:minmax(0,1fr) minmax(0,1fr);gap:9px;min-height:0;min-width:0}
+.planner-subject{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden;padding:10px;border-radius:17px;border:1px solid #e3eae5;background:#f3f8f3}
 .planner-subject.is-other{background:#fbf6ed;border-color:#eee4d4}
 .planner-subject-head{display:flex;align-items:center;justify-content:space-between;gap:5px;margin-bottom:7px;min-height:28px}
-.planner-subject-head strong{font-size:14px;letter-spacing:-.02em}
+.planner-subject-head strong{font-size:14px;letter-spacing:-.02em;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .planner-subject-scrollhint{color:#778b7a;font-size:11px;font-weight:650;flex:none}
 .planner-days-nav button{border:1px solid #dbe6dc;background:#fff;border-radius:8px;min-width:32px;min-height:30px;color:#516d5b}
 .planner-days-nav button:disabled{opacity:.28}
-.planner-cards{display:flex;flex-direction:column;min-width:0;min-height:0;flex:1;gap:6px;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:1px 3px 3px 1px;scrollbar-width:thin;scrollbar-color:#bacfc1 transparent}
+.planner-cards{display:flex;flex-direction:column;min-width:0;max-width:100%;width:100%;min-height:0;flex:1;gap:6px;overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;-webkit-overflow-scrolling:touch;touch-action:pan-y;padding:1px 3px 3px 1px;scrollbar-width:thin;scrollbar-color:#bacfc1 transparent}
 .planner-cards>div{flex:0 0 56px;min-height:56px;min-width:0}
 .planner-cards::-webkit-scrollbar{width:5px}
 .planner-cards::-webkit-scrollbar-thumb{background:#bacfc1;border-radius:8px}
@@ -164,7 +164,7 @@ body.meate-active .shell>footer{display:none}
 .planner-layout{grid-template-columns:minmax(235px,32%) minmax(0,1fr)}
 .planner-board{padding:9px}
 .planner-cards>div{flex:0 0 56px;min-height:56px}
-.planner-card-row{display:flex;gap:4px;min-width:0;align-items:stretch;touch-action:pan-y;position:relative}
+.planner-card-row{display:flex;gap:4px;min-width:0;width:100%;max-width:100%;align-items:stretch;touch-action:pan-y;position:relative}
 .planner-card-row .planner-card{flex:1;min-width:0}
 .planner-card-row .planner-more{flex:none;min-height:44px;width:31px;padding:2px;border:1px solid #dfe7e0;border-radius:10px;background:#fff;color:#6a8172;font-size:17px}
 .planner-card-row .planner-done-action{display:none;min-width:74px;font-size:12px;font-weight:750;padding:5px 7px;border:1px solid #86b79b;color:#2b704b;background:#e5f3e7;border-radius:10px}
