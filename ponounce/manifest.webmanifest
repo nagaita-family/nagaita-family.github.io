@@ -1,0 +1,18 @@
+{
+  "name": "Ponounce — Miori's word sounds",
+  "short_name": "Ponounce",
+  "description": "Listen and spell this week's Miori Word Garden words",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "theme_color": "#f7f5ff",
+  "background_color": "#f7f5ff",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

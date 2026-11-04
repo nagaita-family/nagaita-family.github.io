@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f7f5ff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ponounce">
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="manifest" href="./manifest.webmanifest">
+<title>Ponounce — Miori's word sounds</title>
+<style>
+:root{font-family:ui-rounded,-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;color:#292b43;background:#f7f5ff}
+*{box-sizing:border-box}button,a{-webkit-tap-highlight-color:transparent}button{font:inherit;cursor:pointer}a{color:inherit}
+body{margin:0;min-height:100vh;background:radial-gradient(circle at 8% 6%,#fce9fa 0,transparent 36%),radial-gradient(circle at 90% 23%,#e8f9ef 0,transparent 36%),#f7f5ff}
+.shell{width:min(1120px,100%);margin:auto;padding:20px 24px 40px}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:32px;font-size:14px;font-weight:750}
+.topbar a{text-decoration:none}.back{color:#71738b}.garden-link{background:#fff;padding:10px 16px;border:1px solid #e7e5f4;border-radius:999px;box-shadow:0 3px 12px #6663a10b}
+.intro{padding:2px 6px 30px}.eyebrow{font-weight:850;color:#9776c4;letter-spacing:.15em;font-size:11px}
+.intro-line{display:flex;justify-content:space-between;align-items:center;gap:16px}
+h1{font-size:clamp(52px,8vw,86px);letter-spacing:-.065em;line-height:1.1;margin:8px 0 0;font-weight:850}
+.nounce{color:#a079d9}.sound-wave{font-size:30px;color:#eb99be;vertical-align:top;padding-left:12px;letter-spacing:0}
+.intro-sub{font-weight:630;color:#73738d;font-size:17px;margin:12px 0 0}
+.sparkle{width:102px;height:102px;display:grid;place-items:center;background:linear-gradient(145deg,#d9c5ff,#eddbfa);border:8px solid #fff;border-radius:30px;transform:rotate(9deg);font-size:44px;box-shadow:0 14px 40px #b4a3db35}
+.week-header{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#fff;border:1px solid #e9e6f2;border-radius:24px;padding:20px 24px;margin-bottom:18px;box-shadow:0 8px 34px #605c9410}
+.muted{color:#a198af}h2{font-size:23px;line-height:1.25;letter-spacing:-.025em;margin:5px 0 5px}
+.status{margin:0;font-size:13px;color:#85859a}.refresh,.quiet{background:#f5f2fb;border:1px solid #e7e0f5;color:#775c9e;border-radius:13px;padding:11px 14px;font-size:13px;font-weight:750}
+.refresh:hover,.quiet:hover{background:#eee7fb}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;align-items:start;gap:20px}
+.list-panel,.practice-panel{border-radius:28px;background:#fff;padding:25px;box-shadow:0 10px 38px #55548913;border:1px solid #ece9f5}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:8px}h3{margin:0;font-size:24px;letter-spacing:-.04em}.number{color:#aaa4b7;font-size:14px}
+.micro-note{font-size:13px;color:#88889a;margin:8px 0 18px}.word-list{display:grid;gap:9px}
+.word-row{display:grid;grid-template-columns:40px minmax(0,1fr) 48px 62px;gap:8px;align-items:center;border:1px solid #edeaf4;padding:11px 10px 11px 12px;border-radius:18px;background:#fcfbff;transition:background .15s,border-color .15s}
+.word-row.selected{background:#f2ecff;border-color:#d1b9fd}.word-number{color:#a09caf;font-size:13px;font-weight:800}
+.word-main{min-width:0;display:flex;gap:8px;align-items:center;text-align:left;background:none;border:0;padding:0;min-height:42px;color:#302c43;font-weight:770;font-size:21px}
+.word-main .emoji{font-size:22px}.word-spelling{display:inline-flex;gap:4px;flex-wrap:wrap;align-items:baseline}
+.sound-chunk{display:inline-block;border-bottom:3px solid #b59adf;line-height:1.3;padding:0 1px 2px}
+.silent{color:#ac9cb8;text-decoration:line-through;text-decoration-thickness:1.5px}
+.word-main .concealed,.practice-word.concealed{color:#aca6bb;letter-spacing:.08em}
+.word-main .concealed{font-size:15px}.audio-icon{border:0;border-radius:14px;background:#e6dcfa;color:#5d4088;font-size:19px;min-height:45px;display:grid;place-items:center}
+.slow-icon{border:0;border-radius:14px;background:#e2f5eb;color:#337d5c;font-size:13px;font-weight:850;min-height:45px}
+.audio-icon:active,.slow-icon:active,.play:active{transform:scale(.97)}.audio-icon:disabled,.slow-icon:disabled{opacity:.5}
+.practice-panel{position:sticky;top:18px;text-align:center;background:linear-gradient(175deg,#fff 65%,#fcfaff)}
+.practice-cap{font-weight:850;color:#9674c7;letter-spacing:.13em;font-size:11px}
+.practice-illustration{font-size:37px;margin:17px 0 10px;color:#c2ace4}.practice-illustration span{display:block;font-size:18px;color:#dccdec;margin-top:-5px}
+.practice-number{color:#9e97b1;font-size:12px;letter-spacing:.14em;font-weight:850}
+.practice-word{font-size:clamp(24px,3vw,36px);font-weight:840;min-height:52px;margin:13px 0 7px;overflow-wrap:anywhere;line-height:1.3}
+.practice-cue{font-size:13px;color:#8b8499;min-height:24px}
+.practice-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:22px}
+.play{padding:17px 8px;border-radius:18px;font-size:15px;font-weight:820;min-height:66px;border:0}
+.play:disabled{opacity:.5;cursor:not-allowed}.primary{background:#9b78d7;color:white;box-shadow:0 8px 22px #aa89da35}
+.secondary{background:#dff4e9;color:#397557}.play span{display:block;font-size:23px;margin-bottom:3px}
+.audio-status{font-size:12px;min-height:28px;padding-top:10px;color:#8b849b}
+.practice-nav{display:flex;gap:10px;margin:22px 0 18px}
+.practice-nav button{flex:1;padding:12px 6px;border-radius:12px;border:1px solid #e8e3f0;color:#655d76;background:#fff;font-weight:700;font-size:13px}
+.practice-nav button:disabled{opacity:.35;cursor:not-allowed}
+.sources{border-top:1px dashed #e5e0ef;padding-top:18px;text-align:left;font-size:12px;color:#8b849a;font-weight:700}
+.sources div{display:flex;gap:8px;margin-top:10px}.sources a{flex:1;text-align:center;border:1px solid #e8e4f1;border-radius:11px;padding:10px;text-decoration:none;color:#755ba2;font-weight:800;background:#fff}
+.sources a:not([href]){opacity:.5;pointer-events:none}
+.footnote{color:#9b96a8;font-size:11px;line-height:1.55;text-align:left;margin:15px 0 0}
+.footer{font-size:12px;text-align:center;color:#9a96ad;line-height:1.8;margin:30px 0 0}.footer a{color:#7962a2}
+.error{color:#96534d;border:1px solid #f4cbcb;background:#fff2ee;padding:13px 17px;border-radius:13px;font-size:13px;margin-bottom:18px}
+button:focus-visible,a:focus-visible{outline:3px solid #8867c6;outline-offset:3px}
+@media(max-width:790px){.shell{padding:16px 15px 34px}.layout{grid-template-columns:1fr}.practice-panel{position:static;order:-1}.topbar{margin-bottom:23px}.intro{padding-bottom:25px}.sparkle{width:78px;height:78px;font-size:34px}.week-header{padding:17px 18px}.list-panel,.practice-panel{padding:20px}.word-row{grid-template-columns:27px minmax(0,1fr) 47px 57px}.word-main{font-size:19px}.practice-illustration{display:none}.practice-cap{margin-bottom:8px}.practice-word{min-height:36px}.practice-buttons{margin-top:13px}}
+@media(max-width:420px){h2{font-size:19px}.week-header{align-items:flex-start}.refresh{padding:9px;font-size:12px}.word-main .emoji{font-size:18px}.word-spelling{gap:3px}.word-row{gap:4px;padding:10px 8px}.intro-sub{font-size:14px}.sparkle{display:none}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<main class="shell">
+<header class="topbar"><a class="back" href="/">← Family Apps</a><a class="garden-link" href="/miori-word-garden/">Word Garden ↗</a></header>
+<section class="intro"><div class="eyebrow">MIORI'S ENGLISH STUDIO</div><div class="intro-line"><div>
+<h1>Po<span class="nounce">nounce</span><span class="sound-wave" aria-hidden="true">♫</span></h1>
+<p class="intro-sub">Hear it. Sound it out. Write it.</p></div><div class="sparkle" aria-hidden="true">🔊</div></div></section>
+<section class="week-header" aria-live="polite"><div><div class="eyebrow muted">THIS WEEK'S WORDS</div><h2 id="weekTitle">Loading this week's words…</h2><p id="sourceStatus" class="status">Connecting to Word Garden</p></div>
+<button type="button" class="refresh" id="refreshBtn">↻ Refresh</button></section>
+<div id="errorBanner" class="error" hidden role="alert"></div>
+<div class="layout">
+<section class="list-panel" aria-labelledby="wordListTitle"><div class="section-head"><h3 id="wordListTitle">Words <span class="number" id="wordCount"></span></h3>
+<button type="button" class="quiet" id="hideBtn" aria-pressed="false">🙈 Hide spellings</button></div>
+<p class="micro-note">Tap a speaker, then spell the word on paper.</p><div id="wordList" class="word-list" role="list"></div></section>
+<aside class="practice-panel"><div class="practice-cap">PAPER PRACTICE</div><div class="practice-illustration" aria-hidden="true">✏️ <span>〰〰</span></div>
+<div class="practice-number" id="practiceNumber">WORD — / —</div><div class="practice-word" id="practiceWord">Ready to listen?</div>
+<div class="practice-cue" id="practiceCue">Choose a word to begin.</div>
+<div class="practice-buttons"><button id="playNormal" class="play primary" type="button" disabled><span aria-hidden="true">🔊</span> Listen</button>
+<button id="playSlow" class="play secondary" type="button" disabled><span aria-hidden="true">🐢</span> Slow 0.6×</button></div>
+<div id="audioStatus" class="audio-status" role="status" aria-live="polite"></div>
+<div class="practice-nav"><button type="button" id="previousBtn" disabled>← Previous</button><button type="button" id="nextBtn" disabled>Next word →</button></div>
+<div class="sources"><span>Check a real speaker</span><div><a id="cambridgeLink" target="_blank" rel="noopener noreferrer">Cambridge ↗</a><a id="googleLink" target="_blank" rel="noopener noreferrer">Google ↗</a></div></div>
+<p class="footnote">Underlines are <strong>spelling hints</strong>, not exact sound boundaries. Some letters are silent.</p></aside>
+</div>
+<footer class="footer">Words: <a href="/miori-word-garden/">Miori Word Garden</a> · Recordings: <a href="https://dictionaryapi.dev/" target="_blank" rel="noopener noreferrer">Dictionary API</a> · Device voice is used when a recording is missing.</footer>
+</main>
+<script>
+(function(){
+"use strict";
+const PACK_URL="/miori-word-garden/word-packs/current.json";
+const PACK_KEY="ponounce-school-pack-v1",REC_KEY="ponounce-recordings-v1";
+let pack=null,selected=0,concealed=false,recordings={},activeAudio=null,playToken=0,voices=[],lastSignature="";
+const $=id=>document.getElementById(id);
+function norm(v){return String(v||"").trim().toLowerCase().replace(/[^a-z]/g,"");}
+function stored(key){try{return JSON.parse(localStorage.getItem(key)||"null");}catch(_){return null;}}
+function save(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch(_){}}
+function validPack(data){
+  if(!data||!/^[a-z0-9][a-z0-9-]{3,90}$/i.test(String(data.weekId||""))||!String(data.weekName||"").trim()||
+    !Array.isArray(data.words)||data.words.length<1||data.words.length>30)return false;
+  const seen=new Set();
+  return data.words.every(w=>{
+    if(!w||typeof w.word!=="string"||!/^[a-z]+(?: [a-z]+)*$/i.test(w.word))return false;
+    const id=norm(w.word);if(!id||seen.has(id))return false;seen.add(id);
+    for(const key of ["chunks","phonicsChunks"]){
+      const list=w[key];if(list!=null&&(!Array.isArray(list)||!list.length||list.length>12||
+        list.some(c=>typeof c!=="string"||!/^[a-z]+$/i.test(c))||norm(list.join(""))!==id))return false;
+    }
+    return !w.phonicsSilent||Array.isArray(w.phonicsSilent)&&w.phonicsSilent.every(n=>Number.isInteger(n)&&n>=0&&n<id.length);
+  });
+}
+function wordText(w){return typeof w.displayWord==="string"?w.displayWord:w.word;}
+function parts(w){return Array.isArray(w.phonicsChunks)&&w.phonicsChunks.length?w.phonicsChunks:
+  Array.isArray(w.chunks)&&w.chunks.length?w.chunks:[w.word];}
+function makeSpelling(w){
+  const node=document.createElement("span");node.className="word-spelling";
+  if(concealed){node.className+=" concealed";node.textContent="••••••";return node;}
+  const shown=wordText(w),letters=shown.match(/[a-z]/gi)||[];
+  const silent=new Set(Array.isArray(w.phonicsSilent)?w.phonicsSilent:[]);
+  let index=0;
+  parts(w).forEach((part,i)=>{
+    const seg=document.createElement("span");seg.className="sound-chunk";
+    for(let n=0;n<part.length;n++){
+      const ch=document.createElement(silent.has(index)?"s":"span");
+      ch.textContent=letters[index]||"";
+      if(silent.has(index))ch.className="silent";
+      seg.appendChild(ch);index++;
+    }
+    node.appendChild(seg);
+    if(i<parts(w).length-1){
+      let letterCount=0;
+      for(const ch of shown){if(ch===" "&&letterCount===index){
+        const space=document.createElement("span");space.textContent=" ";space.style.whiteSpace="pre";node.appendChild(space);break;
+      }if(/[a-z]/i.test(ch))letterCount++;}
+    }
+  });
+  return node;
+}
+function selectWord(){
+  if(!pack)return;
+  const w=pack.words[selected];
+  $("practiceNumber").textContent="WORD "+(selected+1)+" / "+pack.words.length;
+  $("practiceWord").textContent=concealed?"••••••":wordText(w);
+  $("practiceWord").classList.toggle("concealed",concealed);
+  $("practiceCue").textContent=concealed?"Listen first. Write what you hear.":(w.pictureEmoji||"")+"  "+(w.meaningEn||"");
+  $("playNormal").disabled=false;$("playSlow").disabled=false;
+  $("previousBtn").disabled=selected===0;$("nextBtn").disabled=selected===pack.words.length-1;
+  $("cambridgeLink").href="https://dictionary.cambridge.org/pronunciation/english/"+encodeURIComponent(wordText(w).toLowerCase().replace(/\s+/g,"-"));
+  $("googleLink").href="https://www.google.com/search?q="+encodeURIComponent(wordText(w)+" pronunciation")+"&hl=en";
+  document.querySelectorAll(".word-row").forEach((row,i)=>row.classList.toggle("selected",i===selected));
+  $("audioStatus").textContent="";
+}
+function render(){
+  if(!pack)return;
+  $("weekTitle").textContent=pack.weekName;
+  $("wordCount").textContent="("+pack.words.length+")";
+  $("wordList").replaceChildren();
+  pack.words.forEach((w,i)=>{
+    const row=document.createElement("div");row.className="word-row";row.setAttribute("role","listitem");
+    const count=document.createElement("span");count.className="word-number";count.textContent=String(i+1).padStart(2,"0");
+    const choose=document.createElement("button");choose.type="button";choose.className="word-main";choose.setAttribute("aria-label","Select word "+(i+1));
+    const emoji=document.createElement("span");emoji.className="emoji";emoji.setAttribute("aria-hidden","true");emoji.textContent=w.pictureEmoji||"✦";
+    choose.append(emoji,makeSpelling(w));
+    choose.onclick=()=>{stop();selected=i;selectWord();};
+    const normal=document.createElement("button");normal.type="button";normal.className="audio-icon";normal.textContent="🔊";normal.setAttribute("aria-label","Listen to word "+(i+1));
+    normal.onclick=()=>{selected=i;selectWord();play(w,false);};
+    const slow=document.createElement("button");slow.type="button";slow.className="slow-icon";slow.textContent="🐢 0.6×";slow.setAttribute("aria-label","Play word "+(i+1)+" slowly");
+    slow.onclick=()=>{selected=i;selectWord();play(w,true);};
+    row.append(count,choose,normal,slow);$("wordList").appendChild(row);
+  });
+  selectWord();
+}
+function urlAudio(value){
+  if(typeof value!=="string"||!value)return null;
+  try{
+    const u=new URL(value.startsWith("//")?"https:"+value:value);
+    if(u.protocol!=="https:"||!/(^|\.)gstatic\.com$|(^|\.)wikimedia\.org$|(^|\.)dictionaryapi\.dev$/i.test(u.hostname))return null;
+    return u.href;
+  }catch(_){return null;}
+}
+function parseRecording(entries,key){
+  if(!Array.isArray(entries))return null;
+  const list=[];
+  entries.filter(e=>e&&norm(e.word)===key).forEach(e=>{
+    (e.phonetics||[]).forEach(p=>{
+      const url=urlAudio(p&&p.audio);if(!url)return;
+      const american=/(?:_|-)us(?:_|-|\.|\/)/i.test(url);
+      const british=/(?:_|-)(?:gb|uk)(?:_|-|\.|\/)/i.test(url);
+      list.push({url,accent:american?"US":british?"UK":"unspecified",score:american?3:british?1:2});
+    });
+  });
+  list.sort((a,b)=>b.score-a.score);
+  return list[0]?{url:list[0].url,accent:list[0].accent}:null;
+}
+function loadCache(){
+  const cache=stored(REC_KEY);
+  if(!cache||!cache.records||Date.now()-Number(cache.at)>14*86400000)return;
+  Object.keys(cache.records).forEach(key=>{
+    const p=cache.records[key];
+    if(p===null)recordings[key]=null;
+    else if(p&&urlAudio(p.url))recordings[key]={url:urlAudio(p.url),accent:p.accent};
+  });
+}
+const pending=new Map();
+async function fetchRecording(w){
+  const key=norm(w.word);
+  if(Object.prototype.hasOwnProperty.call(recordings,key))return recordings[key];
+  if(pending.has(key))return pending.get(key);
+  const task=(async()=>{
+    let found=null;
+    // Do not approximate a phrase by joining recordings of separate words.
+    if(!w.word.includes(" ")){
+      try{
+        const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),4500);
+        try{
+          const res=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(w.word),{signal:abort.signal});
+          if(res.ok)found=parseRecording(await res.json(),key);
+        }finally{clearTimeout(timer);}
+      }catch(_){}
+    }
+    recordings[key]=found;
+    save(REC_KEY,{at:Date.now(),records:recordings});
+    return found;
+  })();
+  pending.set(key,task);
+  try{return await task;}finally{pending.delete(key);}
+}
+function warm(){if(pack)pack.words.forEach(w=>{if(!Object.prototype.hasOwnProperty.call(recordings,norm(w.word)))fetchRecording(w);});}
+function voiceList(){if("speechSynthesis" in window)voices=window.speechSynthesis.getVoices()||[];}
+function stop(){
+  playToken++;
+  if(activeAudio){activeAudio.onerror=null;activeAudio.onplaying=null;activeAudio.onloadedmetadata=null;activeAudio.pause();activeAudio=null;}
+  if("speechSynthesis" in window)window.speechSynthesis.cancel();
+}
+function speech(w,slow,token){
+  if(token!==playToken)return;
+  if(!("speechSynthesis" in window)||typeof SpeechSynthesisUtterance==="undefined"){
+    $("audioStatus").textContent="Audio unavailable. Open Cambridge below.";return;
+  }
+  const utter=new SpeechSynthesisUtterance(wordText(w));
+  const voice=voices.find(v=>/^en-US$/i.test(v.lang)&&/google|samantha/i.test(v.name))||
+    voices.find(v=>/^en-US$/i.test(v.lang))||voices.find(v=>/^en/i.test(v.lang));
+  if(voice)utter.voice=voice;utter.lang=voice?voice.lang:"en-US";
+  utter.rate=slow?0.5:0.94;utter.pitch=1;
+  utter.onerror=()=>{if(token===playToken)$("audioStatus").textContent="Voice unavailable. Try Cambridge below.";};
+  $("audioStatus").textContent=slow?"Device voice · slow":"Device voice";
+  window.speechSynthesis.speak(utter);
+}
+function setRate(audio,slow){
+  const rate=slow?0.60:1.0;
+  audio.defaultPlaybackRate=rate;audio.playbackRate=rate;
+  if("preservesPitch" in audio)audio.preservesPitch=true;
+  if("webkitPreservesPitch" in audio)audio.webkitPreservesPitch=true;
+  return Math.abs(audio.playbackRate-rate)<0.04;
+}
+function play(w,slow){
+  stop();
+  const token=playToken,recording=recordings[norm(w.word)];
+  if(!recording||!recording.url){
+    // iPad Safari needs speech to start synchronously from a user gesture.
+    speech(w,slow,token);
+    if(!Object.prototype.hasOwnProperty.call(recordings,norm(w.word)))fetchRecording(w);
+    return;
+  }
+  const audio=new Audio();activeAudio=audio;audio.preload="auto";
+  audio.onloadedmetadata=()=>{if(token===playToken&&!setRate(audio,slow)){audio.pause();activeAudio=null;speech(w,slow,token);}};
+  audio.onplaying=()=>{if(token===playToken&&!setRate(audio,slow)){audio.pause();activeAudio=null;speech(w,slow,token);}};
+  audio.onerror=()=>{if(token===playToken){activeAudio=null;speech(w,slow,token);}};
+  audio.src=recording.url;setRate(audio,slow);
+  $("audioStatus").textContent="Recorded pronunciation"+(recording.accent!=="unspecified"?" · "+recording.accent:"")+(slow?" · 0.6×":"");
+  const promise=audio.play();
+  if(promise&&promise.catch)promise.catch(()=>{if(token===playToken){activeAudio=null;speech(w,slow,token);}});
+}
+async function loadPack(){
+  $("refreshBtn").disabled=true;$("errorBanner").hidden=true;
+  try{
+    const res=await fetch(PACK_URL+"?v="+Date.now(),{cache:"no-store"});
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    const next=await res.json();if(!validPack(next))throw new Error("Invalid pack");
+    pack={weekId:next.weekId,weekName:next.weekName,words:next.words};
+    save(PACK_KEY,pack);
+    $("sourceStatus").textContent="✓ Synced with Word Garden · "+pack.words.length+" words";
+  }catch(_){
+    const cached=stored(PACK_KEY);
+    if(cached&&validPack(cached)){
+      pack=cached;
+      $("sourceStatus").textContent="Offline copy · reconnect for newest words";
+    }else{
+      $("sourceStatus").textContent="Not connected";
+      $("errorBanner").hidden=false;$("errorBanner").textContent="Could not load Word Garden words. Check the connection and tap Refresh.";
+      $("refreshBtn").disabled=false;return;
+    }
+  }
+  const signature=JSON.stringify(pack);
+  if(signature!==lastSignature){stop();selected=0;lastSignature=signature;render();}
+  warm();$("refreshBtn").disabled=false;
+}
+$("hideBtn").onclick=function(){concealed=!concealed;this.setAttribute("aria-pressed",String(concealed));this.textContent=concealed?"👀 Show spellings":"🙈 Hide spellings";render();};
+$("refreshBtn").onclick=loadPack;
+$("playNormal").onclick=()=>{if(pack)play(pack.words[selected],false);};
+$("playSlow").onclick=()=>{if(pack)play(pack.words[selected],true);};
+$("previousBtn").onclick=()=>{if(pack&&selected>0){stop();selected--;selectWord();}};
+$("nextBtn").onclick=()=>{if(pack&&selected+1<pack.words.length){stop();selected++;selectWord();}};
+loadCache();voiceList();
+if("speechSynthesis" in window)window.speechSynthesis.addEventListener("voiceschanged",voiceList);
+loadPack();
+let lastCheck=Date.now();
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-lastCheck>120000){lastCheck=Date.now();loadPack();}});
+window.addEventListener("pagehide",stop);
+if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+})();
+</script>
+</body>
+</html>
