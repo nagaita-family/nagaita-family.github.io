@@ -55,8 +55,9 @@ h1{font-size:clamp(52px,8vw,86px);letter-spacing:-.065em;line-height:1.1;margin:
 .practice-nav button{flex:1;padding:12px 6px;border-radius:12px;border:1px solid #e8e3f0;color:#655d76;background:#fff;font-weight:700;font-size:13px}
 .practice-nav button:disabled{opacity:.35;cursor:not-allowed}
 .sources{border-top:1px dashed #e5e0ef;padding-top:18px;text-align:left;font-size:12px;color:#8b849a;font-weight:700}
-.sources div{display:flex;gap:8px;margin-top:10px}.sources a{flex:1;text-align:center;border:1px solid #e8e4f1;border-radius:11px;padding:10px;text-decoration:none;color:#755ba2;font-weight:800;background:#fff}
+.sources div{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}.sources a{flex:1 1 130px;text-align:center;border:1px solid #e8e4f1;border-radius:11px;padding:10px;text-decoration:none;color:#755ba2;font-weight:800;background:#fff}
 .sources a:not([href]){opacity:.5;pointer-events:none}
+.sources #americanLink{flex-basis:100%;background:#e2f5eb;border-color:#d1e9d9;color:#2e7550}
 .footnote{color:#9b96a8;font-size:11px;line-height:1.55;text-align:left;margin:15px 0 0}
 .footer{font-size:12px;text-align:center;color:#9a96ad;line-height:1.8;margin:30px 0 0}.footer a{color:#7962a2}
 .error{color:#96534d;border:1px solid #f4cbcb;background:#fff2ee;padding:13px 17px;border-radius:13px;font-size:13px;margin-bottom:18px}
@@ -86,7 +87,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #8867c6;outline-offset:3p
 <button id="playSlow" class="play secondary" type="button" disabled><span aria-hidden="true">🐢</span> Slow 0.6×</button></div>
 <div id="audioStatus" class="audio-status" role="status" aria-live="polite"></div>
 <div class="practice-nav"><button type="button" id="previousBtn" disabled>← Previous</button><button type="button" id="nextBtn" disabled>Next word →</button></div>
-<div class="sources"><span>Check a real speaker</span><div><a id="cambridgeLink" target="_blank" rel="noopener noreferrer">Cambridge ↗</a><a id="googleLink" target="_blank" rel="noopener noreferrer">Google · US ↗</a></div></div>
+<div class="sources"><span>American English references</span><div><a id="americanLink" target="_blank" rel="noopener noreferrer">🇺🇸 US Dictionary ↗</a><a id="cambridgeLink" target="_blank" rel="noopener noreferrer">Cambridge (tap US) ↗</a><a id="googleLink" target="_blank" rel="noopener noreferrer">Google (choose US) ↗</a></div></div>
 <p class="footnote">Underlines are <strong>spelling hints</strong>, not exact sound boundaries. Some letters are silent.</p></aside>
 </div>
 <footer class="footer">Words: <a href="/miori-word-garden/">Miori Word Garden</a> · Recordings: <a href="https://dictionaryapi.dev/" target="_blank" rel="noopener noreferrer">Dictionary API</a> · Device voice is used when a recording is missing.</footer>
@@ -151,6 +152,7 @@ function selectWord(){
   $("practiceCue").textContent=concealed?"Listen first. Write what you hear.":(w.pictureEmoji||"")+"  "+(w.meaningEn||"");
   $("playNormal").disabled=false;$("playSlow").disabled=false;
   $("previousBtn").disabled=selected===0;$("nextBtn").disabled=selected===pack.words.length-1;
+  $("americanLink").href="https://www.merriam-webster.com/dictionary/"+encodeURIComponent(wordText(w));
   $("cambridgeLink").href="https://dictionary.cambridge.org/pronunciation/english/"+encodeURIComponent(wordText(w).toLowerCase().replace(/\s+/g,"-"));
   $("googleLink").href="https://www.google.com/search?q="+encodeURIComponent("how to pronounce "+wordText(w)+" in American English")+"&hl=en&gl=us";
   document.querySelectorAll(".word-row").forEach((row,i)=>row.classList.toggle("selected",i===selected));

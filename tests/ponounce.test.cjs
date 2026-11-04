@@ -119,3 +119,13 @@ test("Google pronunciation link targets American English with US search region",
  const second=new URL(env.el("googleLink").href);
  assert.equal(second.searchParams.get("q"),"how to pronounce time zone in American English");
 });
+
+test("American dictionary link opens the exact school entry without relying on Google's accent preference",async()=>{
+ const env=fixture({pack});await flush();
+ assert.equal(env.el("americanLink").href,"https://www.merriam-webster.com/dictionary/hour");
+ env.el("nextBtn").onclick();
+ assert.equal(env.el("americanLink").href,"https://www.merriam-webster.com/dictionary/time%20zone");
+ assert.match(html,/US Dictionary/);
+ assert.match(html,/Google \(choose US\)/);
+ assert.doesNotMatch(html,/Google · US/);
+});
