@@ -86,7 +86,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #8867c6;outline-offset:3p
 <button id="playSlow" class="play secondary" type="button" disabled><span aria-hidden="true">🐢</span> Slow 0.6×</button></div>
 <div id="audioStatus" class="audio-status" role="status" aria-live="polite"></div>
 <div class="practice-nav"><button type="button" id="previousBtn" disabled>← Previous</button><button type="button" id="nextBtn" disabled>Next word →</button></div>
-<div class="sources"><span>Check a real speaker</span><div><a id="cambridgeLink" target="_blank" rel="noopener noreferrer">Cambridge ↗</a><a id="googleLink" target="_blank" rel="noopener noreferrer">Google ↗</a></div></div>
+<div class="sources"><span>Check a real speaker</span><div><a id="cambridgeLink" target="_blank" rel="noopener noreferrer">Cambridge ↗</a><a id="googleLink" target="_blank" rel="noopener noreferrer">Google · US ↗</a></div></div>
 <p class="footnote">Underlines are <strong>spelling hints</strong>, not exact sound boundaries. Some letters are silent.</p></aside>
 </div>
 <footer class="footer">Words: <a href="/miori-word-garden/">Miori Word Garden</a> · Recordings: <a href="https://dictionaryapi.dev/" target="_blank" rel="noopener noreferrer">Dictionary API</a> · Device voice is used when a recording is missing.</footer>
@@ -152,7 +152,7 @@ function selectWord(){
   $("playNormal").disabled=false;$("playSlow").disabled=false;
   $("previousBtn").disabled=selected===0;$("nextBtn").disabled=selected===pack.words.length-1;
   $("cambridgeLink").href="https://dictionary.cambridge.org/pronunciation/english/"+encodeURIComponent(wordText(w).toLowerCase().replace(/\s+/g,"-"));
-  $("googleLink").href="https://www.google.com/search?q="+encodeURIComponent(wordText(w)+" pronunciation")+"&hl=en";
+  $("googleLink").href="https://www.google.com/search?q="+encodeURIComponent("how to pronounce "+wordText(w)+" in American English")+"&hl=en&gl=us";
   document.querySelectorAll(".word-row").forEach((row,i)=>row.classList.toggle("selected",i===selected));
   $("audioStatus").textContent="";
 }

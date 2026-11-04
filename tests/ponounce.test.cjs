@@ -108,3 +108,14 @@ test("No previous pack is silently displayed as current when both network and ca
  assert.equal(env.el("errorBanner").hidden,false);
  assert.match(env.el("sourceStatus").textContent,/Not connected/);
 });
+
+test("Google pronunciation link targets American English with US search region",async()=>{
+ const env=fixture({pack});await flush();
+ const first=new URL(env.el("googleLink").href);
+ assert.equal(first.searchParams.get("gl"),"us");
+ assert.equal(first.searchParams.get("hl"),"en");
+ assert.equal(first.searchParams.get("q"),"how to pronounce hour in American English");
+ env.el("nextBtn").onclick();
+ const second=new URL(env.el("googleLink").href);
+ assert.equal(second.searchParams.get("q"),"how to pronounce time zone in American English");
+});
