@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - 'ponounce/**'
+      - 'tests/ponounce.test.cjs'
       - '.github/workflows/ponounce.yml'
   pull_request:
     paths:
@@ -16,4 +17,5 @@ jobs:
         with:
           node-version: '22'
       - run: node --check ponounce/sw.js
+      - run: node --test tests/ponounce.test.cjs
       - run: node -e "const fs=require('fs');let h=fs.readFileSync('ponounce/index.html','utf8');let s=h.match(/<script>([\s\S]*?)<\/script>/);if(!s)throw Error('script missing');new Function(s[1]);if(!s[1].includes('miori-word-garden/word-packs/current.json'))throw Error('pack sync missing');"
