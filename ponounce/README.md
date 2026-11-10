@@ -8,4 +8,4 @@ Audio: publicly reachable pronunciation recordings exposed by dictionaryapi.dev 
 
 Cambridge (human voices) and Google pronunciation search open as external references without scraping or embedding their copyrighted audio. The school phonics chunks and silent-letter annotations are displayed as orthographic hints, not exact phoneme boundaries. The app does not read or change Word Garden practice history.
 
-Use PWA Add to Home Screen on iPad. On new static releases, increment the service worker cache name to ensure offline clients refresh.
+Use PWA Add to Home Screen on iPad. On new static releases, increment the service worker cache name to ensure offline clients refresh. v5 prevents indefinite Refresh disabling: a newer tap supersedes the current request; an 8-second request deadline falls back to the saved pack with an explicit offline label, and a controlled PWA reloads once when a newer service worker takes control. To recover an already-open old PWA, close it and reopen, or open the production link in Safari first. Do not clear all Safari website data for this domain: Word Garden stores study history in localStorage.
