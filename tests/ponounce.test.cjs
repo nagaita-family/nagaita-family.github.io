@@ -129,3 +129,58 @@ test("American dictionary link opens the exact school entry without relying on G
  assert.match(html,/Google \(choose US\)/);
  assert.doesNotMatch(html,/Google · US/);
 });
+
+
+const unit7b={
+  weekId:"2026-11-12-unit-7b",
+  weekName:"Nov 12 · Unit 7b",
+  words:[
+    {word:"accurate",meaningEn:"exactly right; with no mistakes",chunks:["ac","cu","rate"]},
+    {word:"axis",meaningEn:"an imaginary line through the middle of something. The object turns on that line",chunks:["ax","is"]},
+    {word:"multiply",meaningEn:"to add a number to itself a number of times, the X in math 2x3=6",chunks:["mul","ti","ply"]},
+    {word:"opposite",meaningEn:"a different as possible",chunks:["op","pos","ite"]},
+    {word:"planet",meaningEn:"a large round object in space that moves around a sun or star",chunks:["plan","et"]},
+    {word:"suggestion",meaningEn:"an idea you have for someone else to think over",chunks:["sug","ges","tion"]},
+    {word:"sunrise",meaningEn:"the time the sun comes up and the day begins",chunks:["sun","rise"]},
+    {word:"sunset",meaningEn:"the time to sun goes away and the day ends",chunks:["sun","set"]},
+    {word:"weather",meaningEn:"how much rain, sun, snow, wind, heat or coldness there is",chunks:["wea","ther"]},
+    {word:"won’t",meaningEn:"will not",chunks:["won","t"]}
+  ]
+};
+const allText=node=>(node.textContent||"")+(node.children||[]).map(allText).join("");
+test("Unit 7b loads all ten words, including the apostrophe in won’t",async()=>{
+ const env=fixture({pack:unit7b,record:false});await flush();
+ assert.equal(env.el("wordList").children.length,10);
+ assert.equal(env.el("weekTitle").textContent,"Nov 12 · Unit 7b");
+ assert.match(env.el("sourceStatus").textContent,/Synced with Word Garden · 10 words/);
+ const last=env.el("wordList").children[9];
+ assert.equal(allText(last.children[1].children[1]),"won’t");
+ assert.equal(last.children[1].children[1].children.filter(x=>x.className==="sound-chunk").length,2);
+ last.children[1].onclick();
+ assert.equal(env.el("practiceWord").textContent,"won’t");
+ assert.equal(env.el("practiceCue").textContent.trim(),"will not");
+});
+test("Contraction falls back to correct US English device speech and searches the apostrophe spelling",async()=>{
+ const env=fixture({pack:unit7b,record:false});await flush();
+ const last=env.el("wordList").children[9];last.children[1].onclick();
+ env.el("playNormal").onclick();env.el("playSlow").onclick();
+ assert.equal(env.spoken.at(-2).text,"won’t");
+ assert.equal(env.spoken.at(-2).lang,"en-US");
+ assert.equal(env.spoken.at(-2).rate,.94);
+ assert.equal(env.spoken.at(-1).text,"won’t");
+ assert.equal(env.spoken.at(-1).rate,.5);
+ assert(env.requests.some(x=>x.includes("/entries/en/won't")||x.includes("/entries/en/won%27t")),"dictionary request uses straight apostrophe");
+});
+test("Malformed contraction cannot replace the current or cached school pack",async()=>{
+ const bad={...unit7b,words:unit7b.words.map((w,i)=>i===9?{...w,word:"won’’t"}:w)};
+ const env=fixture({pack:bad,cache:unit7b});await flush();
+ assert.equal(env.el("wordList").children.length,10);
+ assert.match(env.el("sourceStatus").textContent,/Offline copy/);
+ const noCache=fixture({pack:bad});await flush();
+ assert.match(noCache.el("sourceStatus").textContent,/Not connected/);
+});
+test("Ponounce PWA cache version advances for the new contraction renderer",()=>{
+ const sw=fs.readFileSync("ponounce/sw.js","utf8");
+ assert.match(sw,/const CACHE="ponounce-v4";/);
+ assert.match(html,/miori-word-garden\/word-packs\/current\.json/);
+});
