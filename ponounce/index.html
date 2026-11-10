@@ -26,6 +26,7 @@ h1{font-size:clamp(52px,8vw,86px);letter-spacing:-.065em;line-height:1.1;margin:
 .muted{color:#a198af}h2{font-size:23px;line-height:1.25;letter-spacing:-.025em;margin:5px 0 5px}
 .status{margin:0;font-size:13px;color:#85859a}.refresh,.quiet{background:#f5f2fb;border:1px solid #e7e0f5;color:#775c9e;border-radius:13px;padding:11px 14px;font-size:13px;font-weight:750}
 .refresh:hover,.quiet:hover{background:#eee7fb}
+.refresh{min-height:44px;flex-shrink:0;touch-action:manipulation}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 380px;align-items:start;gap:20px}
 .list-panel,.practice-panel{border-radius:28px;background:#fff;padding:25px;box-shadow:0 10px 38px #55548913;border:1px solid #ece9f5}
 .section-head{display:flex;justify-content:space-between;align-items:center;gap:8px}h3{margin:0;font-size:24px;letter-spacing:-.04em}.number{color:#aaa4b7;font-size:14px}
@@ -90,7 +91,7 @@ button:focus-visible,a:focus-visible{outline:3px solid #8867c6;outline-offset:3p
 <div class="sources"><span>American English references</span><div><a id="americanLink" target="_blank" rel="noopener noreferrer">🇺🇸 US Dictionary ↗</a><a id="cambridgeLink" target="_blank" rel="noopener noreferrer">Cambridge (tap US) ↗</a><a id="googleLink" target="_blank" rel="noopener noreferrer">Google (choose US) ↗</a></div></div>
 <p class="footnote">Underlines are <strong>spelling hints</strong>, not exact sound boundaries. Some letters are silent.</p></aside>
 </div>
-<footer class="footer">Words: <a href="/miori-word-garden/">Miori Word Garden</a> · Recordings: <a href="https://dictionaryapi.dev/" target="_blank" rel="noopener noreferrer">Dictionary API</a> · Device voice is used when a recording is missing.</footer>
+<footer class="footer">Words: <a href="/miori-word-garden/">Miori Word Garden</a> · Recordings: <a href="https://dictionaryapi.dev/" target="_blank" rel="noopener noreferrer">Dictionary API</a> · Device voice is used when a recording is missing. · Ponounce v5</footer>
 </main>
 <script>
 (function(){
@@ -290,29 +291,60 @@ function play(w,slow){
   const promise=audio.play();
   if(promise&&promise.catch)promise.catch(()=>{if(token===playToken){activeAudio=null;speech(w,slow,token);}});
 }
+const PACK_TIMEOUT_MS=8000;
+let packRequestSerial=0,packAbort=null;
 async function loadPack(){
-  $("refreshBtn").disabled=true;$("errorBanner").hidden=true;
+  // Keep Refresh tappable during a slow request: a new tap cancels/replaces the old attempt.
+  const request=++packRequestSerial;
+  if(packAbort)packAbort.abort();
+  const abort=new AbortController();packAbort=abort;
+  const refresh=$("refreshBtn");
+  refresh.disabled=false;refresh.textContent="↻ Checking…";refresh.setAttribute("aria-busy","true");
+  $("errorBanner").hidden=true;
+  $("sourceStatus").textContent=pack?"Checking Word Garden for new words…":"Connecting to Word Garden";
+  let timer=null;
   try{
-    const res=await fetch(PACK_URL+"?v="+Date.now(),{cache:"no-store"});
-    if(!res.ok)throw new Error("HTTP "+res.status);
-    const next=await res.json();if(!validPack(next))throw new Error("Invalid pack");
+    const next=await Promise.race([
+      (async()=>{
+        const res=await fetch(PACK_URL+"?v="+Date.now(),{cache:"no-store",signal:abort.signal});
+        if(!res.ok)throw new Error("HTTP "+res.status);
+        const data=await res.json();
+        if(!validPack(data))throw new Error("Invalid pack");
+        return data;
+      })(),
+      new Promise((_,reject)=>{
+        timer=setTimeout(()=>{abort.abort();reject(new Error("Word Pack request timed out"));},PACK_TIMEOUT_MS);
+      })
+    ]);
+    if(request!==packRequestSerial)return;
     pack={weekId:next.weekId,weekName:next.weekName,words:next.words};
     save(PACK_KEY,pack);
     $("sourceStatus").textContent="✓ Synced with Word Garden · "+pack.words.length+" words";
   }catch(_){
-    const cached=stored(PACK_KEY);
-    if(cached&&validPack(cached)){
-      pack=cached;
+    if(request!==packRequestSerial)return;
+    // Keep a working in-memory list rather than reverting it to an older offline copy.
+    if(!pack){
+      const cached=stored(PACK_KEY);
+      if(cached&&validPack(cached))pack=cached;
+    }
+    if(pack){
       $("sourceStatus").textContent="Offline copy · reconnect for newest words";
     }else{
       $("sourceStatus").textContent="Not connected";
-      $("errorBanner").hidden=false;$("errorBanner").textContent="Could not load Word Garden words. Check the connection and tap Refresh.";
-      $("refreshBtn").disabled=false;return;
+      $("errorBanner").hidden=false;
+      $("errorBanner").textContent="Could not load Word Garden words. Check the connection and tap Refresh.";
+    }
+  }finally{
+    if(timer!==null)clearTimeout(timer);
+    if(request===packRequestSerial){
+      packAbort=null;
+      refresh.disabled=false;refresh.textContent="↻ Refresh";refresh.setAttribute("aria-busy","false");
     }
   }
+  if(request!==packRequestSerial||!pack)return;
   const signature=JSON.stringify(pack);
   if(signature!==lastSignature){stop();selected=0;lastSignature=signature;render();}
-  warm();$("refreshBtn").disabled=false;
+  warm();
 }
 $("hideBtn").onclick=function(){concealed=!concealed;this.setAttribute("aria-pressed",String(concealed));this.textContent=concealed?"👀 Show spellings":"🙈 Hide spellings";render();};
 $("refreshBtn").onclick=loadPack;
@@ -326,7 +358,17 @@ loadPack();
 let lastCheck=Date.now();
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&Date.now()-lastCheck>120000){lastCheck=Date.now();loadPack();}});
 window.addEventListener("pagehide",stop);
-if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
+if("serviceWorker" in navigator){
+  // An installed PWA may stay open across deploys: update the worker and reload a controlled page once.
+  const controlledOnOpen=!!navigator.serviceWorker.controller;
+  let reloaded=false;
+  navigator.serviceWorker.addEventListener("controllerchange",()=>{
+    if(controlledOnOpen&&!reloaded){reloaded=true;window.location.reload();}
+  });
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"}).then(reg=>reg.update()).catch(()=>{});
+  });
+}
 })();
 </script>
 </body>
