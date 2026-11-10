@@ -5,8 +5,9 @@ const fs=require("node:fs");
 const vm=require("node:vm");
 const html=fs.readFileSync("ponounce/index.html","utf8");
 const script=html.match(/<script>([\s\S]*?)<\/script>/)[1];
-function fixture({pack,offline=false,record=true,cache=null}={}){
+function fixture({pack,offline=false,record=true,cache=null,hangPack=false,hangFirstPack=false}={}){
   const elements=new Map(),spoken=[],audios=[],requests=[],storage=new Map();
+  let packCalls=0;
   if(cache)storage.set("ponounce-school-pack-v1",JSON.stringify(cache));
   function element(){
     return {textContent:"",className:"",style:{},children:[],hidden:false,disabled:false,attributes:{},
@@ -35,6 +36,8 @@ function fixture({pack,offline=false,record=true,cache=null}={}){
   const fetch=async url=>{
     requests.push(String(url));
     if(String(url).includes("word-packs/current.json")){
+      packCalls++;
+      if(hangPack||(hangFirstPack&&packCalls===1))return new Promise(()=>{});
       if(offline)throw Error("Offline");
       return {ok:true,json:async()=>pack};
     }
@@ -47,7 +50,7 @@ function fixture({pack,offline=false,record=true,cache=null}={}){
   const context={window:{speechSynthesis:speech,addEventListener(){}},document,navigator:{},
     localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v)},
     SpeechSynthesisUtterance:Utterance,Audio,fetch,AbortController,Date,URL,Map,Set,
-    setTimeout,clearTimeout,console};
+    setTimeout:(callback,ms,...args)=>setTimeout(callback,ms===8000?35:ms,...args),clearTimeout,console};
   vm.runInNewContext(script,context);
   return {elements,el,spoken,audios,requests,storage};
 }
@@ -181,6 +184,35 @@ test("Malformed contraction cannot replace the current or cached school pack",as
 });
 test("Ponounce PWA cache version advances for the new contraction renderer",()=>{
  const sw=fs.readFileSync("ponounce/sw.js","utf8");
- assert.match(sw,/const CACHE="ponounce-v4";/);
+ assert.match(sw,/const CACHE="ponounce-v5";/);
  assert.match(html,/miori-word-garden\/word-packs\/current\.json/);
+});
+
+test("An iPad pack request that never completes times out and leaves Refresh usable",async()=>{
+ const env=fixture({pack:unit7b,cache:unit7b,hangPack:true,record:false});
+ await new Promise(done=>setTimeout(done,70));
+ assert.equal(env.el("refreshBtn").disabled,false);
+ assert.equal(env.el("refreshBtn").textContent,"↻ Refresh");
+ assert.equal(env.el("refreshBtn").attributes["aria-busy"],"false");
+ assert.equal(env.el("wordList").children.length,10,"cached words remain available");
+ assert.match(env.el("sourceStatus").textContent,/Offline copy/);
+});
+test("A second Refresh supersedes a stalled first request and loads the latest pack",async()=>{
+ const env=fixture({pack:unit7b,hangFirstPack:true,record:false});
+ await flush();
+ assert.equal(env.el("refreshBtn").disabled,false,"Refresh remains tappable during network loading");
+ assert.equal(env.el("refreshBtn").attributes["aria-busy"],"true");
+ env.el("refreshBtn").onclick();
+ await flush();
+ assert.equal(env.el("weekTitle").textContent,"Nov 12 · Unit 7b");
+ assert.equal(env.el("wordList").children.length,10);
+ assert.equal(env.el("refreshBtn").textContent,"↻ Refresh");
+ assert.equal(env.el("refreshBtn").attributes["aria-busy"],"false");
+ assert.match(env.el("sourceStatus").textContent,/Synced with Word Garden/);
+});
+test("PWA asks for a fresh service worker and reloads a pre-controlled page on upgrade",()=>{
+ assert.match(html,/serviceWorker\.addEventListener\("controllerchange"/);
+ assert.match(html,/updateViaCache:"none"/);
+ assert.match(html,/window\.location\.reload\(\)/);
+ assert.match(html,/Ponounce v5/);
 });
