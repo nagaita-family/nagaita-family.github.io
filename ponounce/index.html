@@ -107,7 +107,7 @@ function validPack(data){
     !Array.isArray(data.words)||data.words.length<1||data.words.length>30)return false;
   const seen=new Set();
   return data.words.every(w=>{
-    if(!w||typeof w.word!=="string"||!/^[a-z]+(?: [a-z]+)*$/i.test(w.word))return false;
+    if(!w||typeof w.word!=="string"||!/^[a-z]+(?:['’][a-z]+)*(?: [a-z]+(?:['’][a-z]+)*)*$/i.test(w.word))return false;
     const id=norm(w.word);if(!id||seen.has(id))return false;seen.add(id);
     for(const key of ["chunks","phonicsChunks"]){
       const list=w[key];if(list!=null&&(!Array.isArray(list)||!list.length||list.length>12||
@@ -124,22 +124,31 @@ function makeSpelling(w){
   if(concealed){node.className+=" concealed";node.textContent="••••••";return node;}
   const shown=wordText(w),letters=shown.match(/[a-z]/gi)||[];
   const silent=new Set(Array.isArray(w.phonicsSilent)?w.phonicsSilent:[]);
+  // Spelling chunks count letters only; a school apostrophe or space must stay visible.
+  const gaps=new Map();let count=0;
+  for(const ch of shown){
+    if(/[a-z]/i.test(ch))count++;
+    else gaps.set(count,(gaps.get(count)||"")+ch);
+  }
+  const separator=text=>{
+    if(!text)return null;
+    const span=document.createElement("span");
+    span.textContent=text;span.style.whiteSpace="pre";
+    return span;
+  };
   let index=0;
-  parts(w).forEach((part,i)=>{
+  if(gaps.has(0))node.appendChild(separator(gaps.get(0)));
+  parts(w).forEach(part=>{
     const seg=document.createElement("span");seg.className="sound-chunk";
     for(let n=0;n<part.length;n++){
+      if(n&&gaps.has(index))seg.appendChild(separator(gaps.get(index)));
       const ch=document.createElement(silent.has(index)?"s":"span");
       ch.textContent=letters[index]||"";
       if(silent.has(index))ch.className="silent";
       seg.appendChild(ch);index++;
     }
     node.appendChild(seg);
-    if(i<parts(w).length-1){
-      let letterCount=0;
-      for(const ch of shown){if(ch===" "&&letterCount===index){
-        const space=document.createElement("span");space.textContent=" ";space.style.whiteSpace="pre";node.appendChild(space);break;
-      }if(/[a-z]/i.test(ch))letterCount++;}
-    }
+    if(gaps.has(index))node.appendChild(separator(gaps.get(index)));
   });
   return node;
 }
@@ -221,7 +230,9 @@ async function fetchRecording(w){
       try{
         const abort=new AbortController(),timer=setTimeout(()=>abort.abort(),4500);
         try{
-          const res=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(w.word),{signal:abort.signal});
+          // Dictionaries conventionally index contractions with a straight apostrophe.
+          const lookup=wordText(w).replace(/’/g,"'");
+          const res=await fetch("https://api.dictionaryapi.dev/api/v2/entries/en/"+encodeURIComponent(lookup),{signal:abort.signal});
           if(res.ok)found=parseRecording(await res.json(),key);
         }finally{clearTimeout(timer);}
       }catch(_){}
